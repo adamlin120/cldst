@@ -581,11 +581,12 @@ class MultiwozMultipleChoiceProcessor(DataProcessor):
 
     def _create_examples(self, data: Dict, type: str):
         """Creates examples for the training and dev sets."""
+        num_labels = len(data["possible_answer"])
         examples = [
             InputExample(
                 example_id=turn["id"],
                 question=data["question"],
-                contexts=[turn["history"]] * 4,
+                contexts=[turn["history"]] * num_labels,
                 endings=data["possible_answer"],
                 label=turn["label"],
             )
