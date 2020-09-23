@@ -1,0 +1,13 @@
+[
+  "hotel-name",
+  "train-arriveBy",
+  "train-leaveAt",
+  "attraction-name",
+  "restaurant-food",
+  "restaurant-name",
+  "restaurant-booktime",
+  "taxi-leaveAt",
+  "taxi-destination",
+  "taxi-departure",
+  "taxi-arriveBy"
+]

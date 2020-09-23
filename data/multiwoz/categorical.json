@@ -1,0 +1,21 @@
+[
+  "hotel-pricerange",
+  "hotel-type",
+  "hotel-parking",
+  "hotel-bookday",
+  "hotel-bookpeople",
+  "hotel-bookstay",
+  "hotel-stars",
+  "hotel-internet",
+  "hotel-area",
+  "train-departure",
+  "train-day",
+  "train-bookpeople",
+  "train-destination",
+  "attraction-area",
+  "attraction-type",
+  "restaurant-pricerange",
+  "restaurant-area",
+  "restaurant-bookday",
+  "restaurant-bookpeople"
+]

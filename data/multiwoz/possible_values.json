@@ -1,0 +1,209 @@
+{
+  "hotel-pricerange": [
+    "not mentioned",
+    "do not care",
+    "expensive",
+    "cheap",
+    "moderate"
+  ],
+  "hotel-type": [
+    "not mentioned",
+    "do not care",
+    "guesthouse",
+    "hotel"
+  ],
+  "hotel-parking": [
+    "not mentioned",
+    "do not care",
+    "free",
+    "no",
+    "yes"
+  ],
+  "hotel-bookday": [
+    "not mentioned",
+    "do not care",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday"
+  ],
+  "hotel-bookpeople": [
+    "not mentioned",
+    "do not care",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8"
+  ],
+  "hotel-bookstay": [
+    "not mentioned",
+    "do not care",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8"
+  ],
+  "hotel-stars": [
+    "not mentioned",
+    "do not care",
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+  ],
+  "hotel-internet": [
+    "not mentioned",
+    "do not care",
+    "free",
+    "no",
+    "yes"
+  ],
+  "hotel-area": [
+    "not mentioned",
+    "do not care",
+    "centre",
+    "east",
+    "north",
+    "south",
+    "west"
+  ],
+  "train-departure": [
+    "not mentioned",
+    "do not care",
+    "birmingham new street",
+    "bishops stortford",
+    "broxbourne",
+    "cambridge",
+    "ely",
+    "kings lynn",
+    "leicester",
+    "london kings cross",
+    "london liverpool street",
+    "norwich",
+    "peterborough",
+    "stansted airport",
+    "stevenage"
+  ],
+  "train-day": [
+    "not mentioned",
+    "do not care",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday"
+  ],
+  "train-bookpeople": [
+    "not mentioned",
+    "do not care",
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "15"
+  ],
+  "train-destination": [
+    "not mentioned",
+    "do not care",
+    "birmingham new street",
+    "bishops stortford",
+    "broxbourne",
+    "cambridge",
+    "ely",
+    "kings lynn",
+    "leicester",
+    "london kings cross",
+    "london liverpool street",
+    "norwich",
+    "peterborough",
+    "stansted airport",
+    "stevenage"
+  ],
+  "attraction-area": [
+    "not mentioned",
+    "do not care",
+    "centre",
+    "east",
+    "north",
+    "south",
+    "west"
+  ],
+  "attraction-type": [
+    "not mentioned",
+    "do not care",
+    "architecture",
+    "boat",
+    "cinema",
+    "college",
+    "concerthall",
+    "entertainment",
+    "museum",
+    "multiple sports",
+    "nightclub",
+    "park",
+    "swimming pool",
+    "theatre",
+    "night club"
+  ],
+  "restaurant-pricerange": [
+    "not mentioned",
+    "do not care",
+    "cheap",
+    "expensive",
+    "moderate"
+  ],
+  "restaurant-area": [
+    "not mentioned",
+    "do not care",
+    "centre",
+    "east",
+    "north",
+    "south",
+    "west"
+  ],
+  "restaurant-bookday": [
+    "not mentioned",
+    "do not care",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday"
+  ],
+  "restaurant-bookpeople": [
+    "not mentioned",
+    "do not care",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8"
+  ]
+}

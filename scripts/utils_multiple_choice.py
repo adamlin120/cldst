@@ -23,7 +23,7 @@ import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import tqdm
 
@@ -409,7 +409,7 @@ class SwagProcessor(DataProcessor):
             "setting!"
         )
         return self._create_examples(
-            self._read_csv(os.path.join(data_dir, "test.csv")), "test"
+            self._read_json(os.path.join(data_dir, "test.csv")), "test"
         )
 
     def get_labels(self):
@@ -545,6 +545,282 @@ class ArcProcessor(DataProcessor):
         return examples
 
 
+class MultiwozMultipleChoiceProcessor(DataProcessor):
+    """Processor for the Multiwoz data set."""
+
+    possible_values = []
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        logger.info("LOOKING AT {} train".format(data_dir))
+        return self._create_examples(
+            self._read_json(os.path.join(data_dir, "train.json")), "train"
+        )
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        logger.info("LOOKING AT {} dev".format(data_dir))
+        return self._create_examples(
+            self._read_json(os.path.join(data_dir, "val.json")), "dev"
+        )
+
+    def get_test_examples(self, data_dir):
+        """See base class."""
+        logger.info("LOOKING AT {} test".format(data_dir))
+        return self._create_examples(
+            self._read_json(os.path.join(data_dir, "test.json")), "test"
+        )
+
+    def get_labels(self):
+        """See base class."""
+        return self.possible_values
+
+    def _read_json(self, input_file):
+        with open(input_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def _create_examples(self, data: Dict, type: str):
+        """Creates examples for the training and dev sets."""
+        examples = [
+            InputExample(
+                example_id=turn["id"],
+                question=data["question"],
+                contexts=[turn["history"]] * 4,
+                endings=data["possible_answer"],
+                label=turn["label"],
+            )
+            for turn in data["turns"]
+        ]
+
+        return examples
+
+
+class MultiwozHotelPricerange(MultiwozMultipleChoiceProcessor):
+    possible_values = ["not mentioned", "do not care", "expensive", "cheap", "moderate"]
+
+
+class MultiwozHotelType(MultiwozMultipleChoiceProcessor):
+    possible_values = ["not mentioned", "do not care", "guesthouse", "hotel"]
+
+
+class MultiwozHotelParking(MultiwozMultipleChoiceProcessor):
+    possible_values = ["not mentioned", "do not care", "free", "no", "yes"]
+
+
+class MultiwozHotelBookday(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
+
+
+class MultiwozHotelBookpeople(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+    ]
+
+
+class MultiwozHotelBookstay(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+    ]
+
+
+class MultiwozHotelStars(MultiwozMultipleChoiceProcessor):
+    possible_values = ["not mentioned", "do not care", "0", "1", "2", "3", "4", "5"]
+
+
+class MultiwozHotelInternet(MultiwozMultipleChoiceProcessor):
+    possible_values = ["not mentioned", "do not care", "free", "no", "yes"]
+
+
+class MultiwozHotelArea(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "centre",
+        "east",
+        "north",
+        "south",
+        "west",
+    ]
+
+
+class MultiwozTrainDeparture(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "birmingham new street",
+        "bishops stortford",
+        "broxbourne",
+        "cambridge",
+        "ely",
+        "kings lynn",
+        "leicester",
+        "london kings cross",
+        "london liverpool street",
+        "norwich",
+        "peterborough",
+        "stansted airport",
+        "stevenage",
+    ]
+
+
+class MultiwozTrainDay(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
+
+
+class MultiwozTrainBookpeople(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "15",
+    ]
+
+
+class MultiwozTrainDestination(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "birmingham new street",
+        "bishops stortford",
+        "broxbourne",
+        "cambridge",
+        "ely",
+        "kings lynn",
+        "leicester",
+        "london kings cross",
+        "london liverpool street",
+        "norwich",
+        "peterborough",
+        "stansted airport",
+        "stevenage",
+    ]
+
+
+class MultiwozAttractionArea(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "centre",
+        "east",
+        "north",
+        "south",
+        "west",
+    ]
+
+
+class MultiwozAttractionType(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "architecture",
+        "boat",
+        "cinema",
+        "college",
+        "concerthall",
+        "entertainment",
+        "museum",
+        "multiple sports",
+        "nightclub",
+        "park",
+        "swimming pool",
+        "theatre",
+        "night club",
+    ]
+
+
+class MultiwozRestaurantPricerange(MultiwozMultipleChoiceProcessor):
+    possible_values = ["not mentioned", "do not care", "cheap", "expensive", "moderate"]
+
+
+class MultiwozRestaurantArea(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "centre",
+        "east",
+        "north",
+        "south",
+        "west",
+    ]
+
+
+class MultiwozRestaurantBookday(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
+
+
+class MultiwozRestaurantBookpeople(MultiwozMultipleChoiceProcessor):
+    possible_values = [
+        "not mentioned",
+        "do not care",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+    ]
+
+
 def convert_examples_to_features(
     examples: List[InputExample],
     label_list: List[str],
@@ -580,7 +856,7 @@ def convert_examples_to_features(
                 add_special_tokens=True,
                 max_length=max_length,
                 padding="max_length",
-                truncation=True,
+                truncation="only_first",
                 return_overflowing_tokens=True,
             )
             if "num_truncated_tokens" in inputs and inputs["num_truncated_tokens"] > 0:
@@ -628,5 +904,25 @@ processors = {
     "swag": SwagProcessor,
     "arc": ArcProcessor,
     "syn": SynonymProcessor,
+    "hotel-pricerange": MultiwozHotelPricerange,
+    "hotel-type": MultiwozHotelType,
+    "hotel-parking": MultiwozHotelParking,
+    "hotel-bookday": MultiwozHotelBookday,
+    "hotel-bookpeople": MultiwozHotelBookpeople,
+    "hotel-bookstay": MultiwozHotelBookstay,
+    "hotel-stars": MultiwozHotelStars,
+    "hotel-internet": MultiwozHotelInternet,
+    "hotel-area": MultiwozHotelArea,
+    "train-departure": MultiwozTrainDeparture,
+    "train-day": MultiwozTrainDay,
+    "train-bookpeople": MultiwozTrainBookpeople,
+    "train-destination": MultiwozTrainDestination,
+    "attraction-area": MultiwozAttractionArea,
+    "attraction-type": MultiwozAttractionType,
+    "restaurant-pricerange": MultiwozRestaurantPricerange,
+    "restaurant-area": MultiwozRestaurantArea,
+    "restaurant-bookday": MultiwozRestaurantBookday,
+    "restaurant-bookpeople": MultiwozRestaurantBookpeople,
 }
+
 MULTIPLE_CHOICE_TASKS_NUM_LABELS = {"race", 4, "swag", 4, "arc", 4, "syn", 5}
