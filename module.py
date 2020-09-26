@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, Namespace
 
 import torch
-from pytorch_lightning import LightningModule
+from pytorch_lightning import LightningModule, TrainResult, EvalResult
 from transformers import AdamW, BertTokenizer, GPT2LMHeadModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -37,31 +37,41 @@ class ConditionalLM(LightningModule):
     def forward(self, *args, **kwargs) -> CausalLMOutputWithPast:
         return self.model.forward(return_dict=True, *args, **kwargs)
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx) -> TrainResult:
         output = self.forward(**batch)
-        tensorboard_logs = {"train_loss": output.loss}
-        return {"loss": output.loss, "log": tensorboard_logs}
+        result = TrainResult(
+            minimize=output.loss,
+        )
+        result.log("train_loss", output.loss.detach(), prog_bar=True, on_epoch=True)
+        return result
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx) -> EvalResult:
         output = self.forward(**batch)
-        return {"val_loss": output.loss}
+        result = EvalResult(checkpoint_on=output.loss, early_stop_on=output.loss)
+        result.log(
+            "val_loss",
+            output.loss,
+            prog_bar=True,
+        )
+        return result
 
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
-        tensorboard_logs = {
-            "val_loss": avg_loss,
-            "val_ppl": avg_loss.exp(),
-        }
-        return {"val_loss": avg_loss, "log": tensorboard_logs}
+    def validation_epoch_end(
+        self, validation_step_output_result: EvalResult
+    ) -> EvalResult:
+        import ipdb
 
-    def test_step(self, *args, **kwargs):
-        return self.validation_step(*args, **kwargs)
+        ipdb.set_trace()
+        return validation_step_output_result
 
-    def test_epoch_end(self, *args, **kwargs):
-        output = self.validation_epoch_end(*args, **kwargs)
-        output = {k.replace("val", "test"): v for k, v in output.items()}
-        output["log"] = {k.replace("val", "test"): v for k, v in output["log"].items()}
-        return output
+    def test_step(self, batch, batch_idx) -> EvalResult:
+        output = self.forward(**batch)
+        result = EvalResult(checkpoint_on=output.loss, early_stop_on=output.loss)
+        result.log(
+            "test_loss",
+            output.loss,
+            prog_bar=True,
+        )
+        return result
 
     def configure_optimizers(self):
         optimizer = AdamW(
