@@ -36,19 +36,17 @@ FILENAMES = {
 }
 
 
-def canonicalize_slot_name(belief: Dict) -> Dict:
+def canonicalize_slot_name(belief: Dict, mode: str) -> Dict:
     canonicalized_belief = {}
     for domain, origin_slots in belief.items():
         for slot_type, slots in origin_slots.items():
             for slot_origin_name, slot_value in slots.items():
-                if slot_type == "book":
+                if slot_type == "book" and mode == "en":
                     if slot_origin_name == "booked":
                         continue
                     slot_name = f"{domain}-book{slot_origin_name}"
-                elif slot_type == "semi":
-                    slot_name = f"{domain}-{slot_origin_name}"
                 else:
-                    raise Exception(f"Unknown slot type: {slot_type}")
+                    slot_name = f"{domain}-{slot_origin_name}"
                 canonicalized_belief[slot_name] = slot_value
     return canonicalized_belief
 
@@ -57,7 +55,8 @@ def clean_slot_value(
     belief: Dict, sorted_slot_list: List[str], readable_slot: Dict[str, str]
 ) -> List[str]:
     clean_belief = [
-        f"{' '.join(readable_slot.get(slot_name, slot_name).split('-'))} {belief[slot_name]}"
+        f"{' '.join(list(map(lambda x: x.strip(), readable_slot.get(slot_name, slot_name).split('-'))))} "
+        f"{belief[slot_name].strip()}".strip()
         for slot_name in sorted_slot_list
         if not is_empty_slot(belief.get(slot_name, ""))
     ]
@@ -95,7 +94,7 @@ def main():
                     history += f" {speaker} : {turn['text']} "
                 elif speaker == system:
                     belief = turn["metadata"]
-                    belief = canonicalize_slot_name(belief)
+                    belief = canonicalize_slot_name(belief, args.mode)
                     belief = clean_slot_value(belief, sorted_slot_list, readable_slots)
                     belief = ", ".join(belief)
 
