@@ -55,14 +55,6 @@ class ConditionalLM(LightningModule):
         )
         return result
 
-    def validation_epoch_end(
-        self, validation_step_output_result: EvalResult
-    ) -> EvalResult:
-        import ipdb
-
-        ipdb.set_trace()
-        return validation_step_output_result
-
     def test_step(self, batch, batch_idx) -> EvalResult:
         output = self.forward(**batch)
         result = EvalResult(checkpoint_on=output.loss, early_stop_on=output.loss)
