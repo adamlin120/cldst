@@ -8,18 +8,21 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import BertTokenizer
 
-from module import BOS, EOS, BELIEF, IGNORE_INDEX, ATTR_TO_SPECIAL_TOKEN
+from module import BOS, EOS, BELIEF, IGNORE_INDEX, ATTR_TO_SPECIAL_TOKEN, PAD
 
 
 class MultiwozDataset(Dataset):
-    def __init__(self, path: Path, tokenizer: BertTokenizer) -> None:
+    def __init__(
+        self, path: Path, tokenizer: BertTokenizer, max_len: int = 256
+    ) -> None:
         self.path = path
         self.tokenizer = tokenizer
-        self.tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
+        self.max_len = max_len
 
         self.data = json.loads(self.path.read_text())
         self.turn_ids: List[str] = list(self.data.keys())
-        self.pad_token_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
+        self.tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
+        self.pad_token_id = self.tokenizer.convert_tokens_to_ids(PAD)
 
     def __len__(self) -> int:
         return len(self.data)
@@ -35,7 +38,7 @@ class MultiwozDataset(Dataset):
     def collate_fn(self, batch: List[Dict[str, List[int]]]) -> Dict[str, torch.Tensor]:
         return {
             tensor_name: pad_truncate_sequence(
-                [i[tensor_name] for i in batch], self.pad_token_id, 512
+                [i[tensor_name] for i in batch], self.pad_token_id, self.max_len
             )
             for tensor_name in batch[0].keys()
         }
@@ -55,12 +58,16 @@ class MultiWOZDataModule(pl.LightningDataModule):
         if stage == "fit" or stage is None:
             for split in ["train", "val"]:
                 self.datasets[split] = MultiwozDataset(
-                    Path(self.hparams.data_dir) / f"{split}.json", self.tokenizer
+                    Path(self.hparams.data_dir) / f"{split}.json",
+                    self.tokenizer,
+                    self.hparams.max_len,
                 )
 
         if stage == "test" or stage is None:
             self.datasets["test"] = MultiwozDataset(
-                Path(self.hparams.data_dir) / "test.json", self.tokenizer
+                Path(self.hparams.data_dir) / "test.json",
+                self.tokenizer,
+                self.hparams.max_len,
             )
 
     def train_dataloader(self):
@@ -108,6 +115,11 @@ class MultiWOZDataModule(pl.LightningDataModule):
         )
         parent_parser.add_argument(
             "--tokenizer_name", type=str, default="models/mega-bert-tok/"
+        )
+        parent_parser.add_argument(
+            "--max_len",
+            type=int,
+            default=256,
         )
         return parent_parser
 
