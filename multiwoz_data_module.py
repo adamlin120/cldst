@@ -137,7 +137,7 @@ def pad_truncate_sequence(
 ) -> torch.LongTensor:
     max_length = min(max_length, max(len(s) for s in seq))
     padded_seq = [
-        s[(max_length - len(s)) :] + [padding_value] * (max_length - len(s))
+        s[max(0, max_length - len(s)) :] + [padding_value] * (max_length - len(s))
         for s in seq
     ]
     padded_tensor = torch.tensor(padded_seq, dtype=torch.long)
