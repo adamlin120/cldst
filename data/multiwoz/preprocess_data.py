@@ -92,7 +92,7 @@ def main():
                 zip(cycle([user, system]), item["log"])
             ):
                 if speaker == user:
-                    history += f"{speaker} : {turn['text']} "
+                    history += f"{speaker}:{turn['text']} "
                 elif speaker == system:
                     belief = turn["metadata"]
                     belief = canonicalize_slot_name(belief, args.mode)
