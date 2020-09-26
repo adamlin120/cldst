@@ -22,13 +22,14 @@ def main(args: Namespace):
     while True:
         history = input("History:")
         history = build_test_string(history)
-        pipeline(
+        gen = pipeline(
             history,
             max_length=512,
             eos_token_id=eos_token_id,
             # top_k=50,
             # top_p=0.95,
         )
+        print(gen)
 
 
 def parse_args() -> Namespace:
