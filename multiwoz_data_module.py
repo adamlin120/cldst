@@ -3,20 +3,26 @@ from typing import Dict, List
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 
-import ipdb
 import pytorch_lightning as pl
+import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import BertTokenizer
 
-from module import BOS, EOS, BELIEF, IGNORE_INDEX
+from module import BOS, EOS, BELIEF, IGNORE_INDEX, ATTR_TO_SPECIAL_TOKEN
+
+
+gpt2_max_lentgh = 1024
 
 
 class MultiwozDataset(Dataset):
     def __init__(self, path: Path, tokenizer: BertTokenizer) -> None:
         self.path = path
         self.tokenizer = tokenizer
+        self.tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
+
         self.data = json.loads(self.path.read_text())
         self.turn_ids: List[str] = list(self.data.keys())
+        self.pad_token_id = self.tokenizer.convert_tokens_to_ids("[PAD]")
 
     def __len__(self) -> int:
         return len(self.data)
@@ -29,10 +35,13 @@ class MultiwozDataset(Dataset):
         )
         return instance
 
-    @staticmethod
-    def collate_fn():
-        ipdb.set_trace()
-        pass
+    def collate_fn(self, batch: List[Dict[str, List[int]]]) -> Dict[str, torch.Tensor]:
+        return {
+            tensor_name: pad_truncate_sequence(
+                [i[tensor_name] for i in batch], self.pad_token_id, gpt2_max_lentgh
+            )
+            for tensor_name in batch[0].keys()
+        }
 
 
 class MultiWOZDataModule(pl.LightningDataModule):
@@ -43,7 +52,7 @@ class MultiWOZDataModule(pl.LightningDataModule):
         super().__init__()
         self.hparams = hparams
         self.tokenizer = BertTokenizer.from_pretrained(self.hparams.tokenizer_name)
-        self.datasets: Dict[str, Dataset] = {}
+        self.datasets: Dict[str, MultiwozDataset] = {}
 
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
@@ -60,6 +69,7 @@ class MultiWOZDataModule(pl.LightningDataModule):
     def train_dataloader(self):
         return DataLoader(
             self.datasets["train"],
+            collate_fn=self.datasets["train"].collate_fn,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             pin_memory=True,
@@ -69,6 +79,7 @@ class MultiWOZDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.datasets["val"],
+            collate_fn=self.datasets["val"].collate_fn,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             pin_memory=True,
@@ -77,6 +88,7 @@ class MultiWOZDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             self.datasets["test"],
+            collate_fn=self.datasets["test"].collate_fn,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             pin_memory=True,
@@ -117,8 +129,16 @@ def build_input_from_segments(
     labels = [IGNORE_INDEX] * len(input_ids)
     input_ids += [*belief, eos]
     labels += [*belief, eos]
-    ipdb.set_trace()
 
     assert len(input_ids) == len(labels)
     instance = {"input_ids": input_ids, "labels": labels}
     return instance
+
+
+def pad_truncate_sequence(
+    seq: List[List[int]], padding_value: int, max_length: int = 1024
+) -> torch.LongTensor:
+    max_length = min(max_length, max(len(s) for s in seq))
+    padded_seq = [s[:max_length] + [padding_value] * (max_length - len(s)) for s in seq]
+    padded_tensor = torch.tensor(padded_seq, dtype=torch.long)
+    return padded_tensor
