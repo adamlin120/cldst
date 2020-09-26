@@ -11,9 +11,6 @@ from transformers import BertTokenizer
 from module import BOS, EOS, BELIEF, IGNORE_INDEX, ATTR_TO_SPECIAL_TOKEN
 
 
-gpt2_max_lentgh = 1024
-
-
 class MultiwozDataset(Dataset):
     def __init__(self, path: Path, tokenizer: BertTokenizer) -> None:
         self.path = path
@@ -38,7 +35,7 @@ class MultiwozDataset(Dataset):
     def collate_fn(self, batch: List[Dict[str, List[int]]]) -> Dict[str, torch.Tensor]:
         return {
             tensor_name: pad_truncate_sequence(
-                [i[tensor_name] for i in batch], self.pad_token_id, gpt2_max_lentgh
+                [i[tensor_name] for i in batch], self.pad_token_id, 512
             )
             for tensor_name in batch[0].keys()
         }
@@ -139,6 +136,9 @@ def pad_truncate_sequence(
     seq: List[List[int]], padding_value: int, max_length: int = 1024
 ) -> torch.LongTensor:
     max_length = min(max_length, max(len(s) for s in seq))
-    padded_seq = [s[:max_length] + [padding_value] * (max_length - len(s)) for s in seq]
+    padded_seq = [
+        s[(max_length - len(s)) :] + [padding_value] * (max_length - len(s))
+        for s in seq
+    ]
     padded_tensor = torch.tensor(padded_seq, dtype=torch.long)
     return padded_tensor
