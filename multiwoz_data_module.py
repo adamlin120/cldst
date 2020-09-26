@@ -143,6 +143,10 @@ def build_input_from_segments(
     return instance
 
 
+def build_test_string(history: str) -> str:
+    return f"{BOS} {history} {BELIEF}"
+
+
 def pad_truncate_sequence(
     seq: List[List[int]], padding_value: int, max_length: int = 1024
 ) -> torch.LongTensor:
