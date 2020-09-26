@@ -51,7 +51,9 @@ class MultiWOZDataModule(pl.LightningDataModule):
     ):
         super().__init__()
         self.hparams = hparams
-        self.tokenizer = BertTokenizer.from_pretrained(self.hparams.tokenizer_name)
+        self.tokenizer = BertTokenizer.from_pretrained(
+            self.hparams.model_checkpoint, do_lower_case=True
+        )
         self.datasets: Dict[str, MultiwozDataset] = {}
 
     def setup(self, stage=None):
@@ -112,9 +114,6 @@ class MultiWOZDataModule(pl.LightningDataModule):
             type=int,
             default=1,
             help="Number of workers in data loader",
-        )
-        parent_parser.add_argument(
-            "--tokenizer_name", type=str, default="models/mega-bert-tok/"
         )
         parent_parser.add_argument(
             "--max_len",

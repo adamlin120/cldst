@@ -2,10 +2,8 @@ from argparse import ArgumentParser, Namespace
 
 import torch
 from pytorch_lightning import LightningModule
-from transformers import AdamW, BertTokenizer
+from transformers import AdamW, BertTokenizer, GPT2LMHeadModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
-
-from modeling_gpt2_ml_torch import GPT2LMHeadModel
 
 
 IGNORE_INDEX = -100
@@ -29,7 +27,9 @@ class ConditionalLM(LightningModule):
         super().__init__()
         self.hparams = hparams
 
-        self.tokenizer = BertTokenizer.from_pretrained(self.hparams.model_checkpoint)
+        self.tokenizer = BertTokenizer.from_pretrained(
+            self.hparams.model_checkpoint, do_lower_case=True
+        )
         self.model = GPT2LMHeadModel.from_pretrained(self.hparams.model_checkpoint)
         # Add special tokens if they are not already added
         add_special_tokens_(self.model, self.tokenizer)
@@ -75,7 +75,7 @@ class ConditionalLM(LightningModule):
         parser.add_argument(
             "--model_checkpoint",
             type=str,
-            default="models/mega-bert-tok/",
+            default="~/work/CDial-GPT2_LCCC-base/",
             help="Dir path to pretrained model",
         )
         parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate")
