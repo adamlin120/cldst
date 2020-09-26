@@ -122,7 +122,7 @@ def parse_args():
         "--multiwoz21_clean_dir", type=Path, default="./MultiWOZ2.1_Cleaned/"
     )
     parser.add_argument("--multiwoz_zn_dir", type=Path, default="./zh/")
-    parser.add_argument("--output_dir", type=Path, default="seq2seq/")
+    parser.add_argument("--output_dir", type=Path, default="processed/")
     return parser.parse_args()
 
 

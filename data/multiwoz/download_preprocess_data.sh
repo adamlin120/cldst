@@ -12,5 +12,3 @@ rm human_val_data.zip
 wget "https://github.com/ConvLab/ConvLab-2/raw/master/data/multiwoz_zh/mt_data.zip"
 unzip mt_data.zip
 rm mt_data.zip
-
-
