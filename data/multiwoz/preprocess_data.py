@@ -97,13 +97,13 @@ def main():
                     belief = turn["metadata"]
                     belief = canonicalize_slot_name(belief, args.mode)
                     belief = clean_slot_value(belief, sorted_slot_list, readable_slots)
-                    belief = ", ".join(belief)
+                    belief = ",".join(belief)
 
                     data[f"{dialogue_id}-{turn_id}"] = {
                         "belief": belief,
-                        "history": history,
+                        "history": history.strip(),
                     }
-                    history += f" {speaker} : {turn['text']} "
+                    history += f" {speaker}:{turn['text']} "
                 else:
                     raise ValueError(f"Unexpected speaker: {speaker}")
 
