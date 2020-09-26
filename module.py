@@ -1,6 +1,5 @@
 from argparse import ArgumentParser, Namespace
 
-import torch
 from pytorch_lightning import LightningModule, TrainResult, EvalResult
 from transformers import AdamW, BertTokenizer, GPT2LMHeadModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
