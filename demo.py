@@ -2,7 +2,6 @@ import json
 import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from pprint import pprint as print
 import pdb
 
 from transformers import BertTokenizer, GPT2LMHeadModel, TextGenerationPipeline
