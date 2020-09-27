@@ -3,9 +3,9 @@ import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from pprint import pprint as print
+import pdb
 
 from transformers import BertTokenizer, GPT2LMHeadModel, TextGenerationPipeline
-import ipdb
 
 from module import EOS
 from multiwoz_data_module import build_test_string
@@ -38,7 +38,7 @@ def main(args: Namespace):
             return_tensors=True,
         )
         print(gen, turn["belief"])
-        ipdb.set_trace()
+        pdb.set_trace()
 
 
 def parse_args() -> Namespace:
