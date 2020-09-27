@@ -1,5 +1,8 @@
+import json
 import logging
 from argparse import ArgumentParser, Namespace
+from pathlib import Path
+from pprint import pprint as print
 
 from transformers import BertTokenizer, GPT2LMHeadModel, TextGenerationPipeline
 import ipdb
@@ -21,25 +24,29 @@ def main(args: Namespace):
         model, tokenizer, framework="pt", device=args.cuda_device
     )
 
-    while True:
-        history = input("History:")
+    test_set = json.loads(Path(args.test_set).read_text())
+
+    for id, turn in test_set.items():
+        # history = input("History:")
+        history = turn["history"]
         history = build_test_string(history)
         gen = pipeline(
             history,
             max_length=512,
             eos_token_id=eos_token_id,
-            clean_up_tokenization_spaces=True,
+            clean_up_tokenization_spaces=False,
             return_tensors=True,
         )
+        print(gen, turn["belief"])
         ipdb.set_trace()
-        print(gen)
 
 
 def parse_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("checkpoint_path")
-    parser.add_argument("dataset")
-    parser.add_argument("split")
+    parser.add_argument(
+        "--test_set", type=str, default="./data/multiwoz/seq2seq/zh/test.json"
+    )
     parser.add_argument("--cuda_device", type=int, default=0)
     return parser.parse_args()
 
