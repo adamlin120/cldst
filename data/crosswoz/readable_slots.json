@@ -1,0 +1,15 @@
+{
+  "hotel-pricerange": "hotel-price range",
+  "hotel-bookday": "hotel-day",
+  "hotel-bookpeople": "hotel-people",
+  "hotel-bookstay": "hotel-stay",
+  "train-bookpeople": "train-people",
+  "train-arriveBy": "train-arrive by",
+  "train-leaveAt": "train-leave at",
+  "restaurant-pricerange": "restaurant-price range",
+  "restaurant-bookday": "restaurant-day",
+  "restaurant-bookpeople": "restaurant-people",
+  "restaurant-booktime": "restaurant-time",
+  "taxi-leaveAt": "taxi-leave at",
+  "taxi-arriveBy": "taxi-arrive by"
+}

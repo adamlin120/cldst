@@ -26,8 +26,7 @@ def main(args: Namespace):
             history,
             max_length=512,
             eos_token_id=eos_token_id,
-            # top_k=50,
-            # top_p=0.95,
+            clean_up_tokenization_spaces=True,
         )
         print(gen)
 
@@ -35,6 +34,8 @@ def main(args: Namespace):
 def parse_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("checkpoint_path")
+    parser.add_argument("dataset")
+    parser.add_argument("split")
     parser.add_argument("--cuda_device", type=int, default=0)
     return parser.parse_args()
 
