@@ -27,7 +27,7 @@ def main(args: Namespace):
     test_set = json.loads(Path(args.test_set).read_text())
     pred = {}
 
-    for id, turn in tqdm(test_set.items()):
+    for i, (id, turn) in tqdm(enumerate(test_set.items())):
         history = turn["history"]
         history = build_test_string(history)
         gen = pipeline(
@@ -37,9 +37,11 @@ def main(args: Namespace):
             clean_up_tokenization_spaces=False,
         )
         pred[id] = gen[0]["generated_text"]
+        if i > 10:
+            break
     Path(
         args.test_set + "." + os.path.basename(os.path.dirname(args.checkpoint_path))
-    ).write_text(json.dumps(pred))
+    ).write_text(json.dumps(pred, ensure_ascii=False, indent=4))
 
 
 def parse_args() -> Namespace:
