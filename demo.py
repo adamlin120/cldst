@@ -2,9 +2,11 @@ import logging
 from argparse import ArgumentParser, Namespace
 
 from transformers import BertTokenizer, GPT2LMHeadModel, TextGenerationPipeline
+import ipdb
 
 from module import EOS
 from multiwoz_data_module import build_test_string
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,7 +29,9 @@ def main(args: Namespace):
             max_length=512,
             eos_token_id=eos_token_id,
             clean_up_tokenization_spaces=True,
+            return_tensors=True,
         )
+        ipdb.set_trace()
         print(gen)
 
 

@@ -21,7 +21,6 @@ class MultiwozDataset(Dataset):
 
         self.data = json.loads(self.path.read_text())
         self.turn_ids: List[str] = list(self.data.keys())
-        self.tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
         self.pad_token_id = self.tokenizer.convert_tokens_to_ids(PAD)
 
     def __len__(self) -> int:
@@ -54,6 +53,7 @@ class MultiWOZDataModule(pl.LightningDataModule):
         self.tokenizer = BertTokenizer.from_pretrained(
             self.hparams.model_checkpoint, do_lower_case=True
         )
+        self.tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
         self.datasets: Dict[str, MultiwozDataset] = {}
 
     def setup(self, stage=None):
