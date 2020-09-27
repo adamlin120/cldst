@@ -8,14 +8,18 @@ from transformers import BertTokenizer, GPT2LMHeadModel
 from tqdm.auto import tqdm
 
 from module import EOS
-from multiwoz_data_module import build_test_string, build_input_from_segments
+from multiwoz_data_module import build_test_string
 
 
 logging.basicConfig(level=logging.INFO)
 
 
 def main(args: Namespace):
-    model = GPT2LMHeadModel.from_pretrained(args.checkpoint_path).eval()
+    model = (
+        GPT2LMHeadModel.from_pretrained(args.checkpoint_path)
+        .eval()
+        .cuda(args.cuda_device)
+    )
     tokenizer = BertTokenizer.from_pretrained(args.checkpoint_path)
 
     eos_token_id = tokenizer.convert_tokens_to_ids(EOS)
@@ -26,7 +30,9 @@ def main(args: Namespace):
     for i, (id, turn) in tqdm(enumerate(test_set.items())):
         history = turn["history"]
         history = build_test_string(history)
-        input_ids = tokenizer(history, add_special_tokens=False)
+        input_ids = tokenizer(history, add_special_tokens=False)["input_ids"].cuda(
+            args.cuda_device
+        )
         gen = model.generate(
             input_ids,
             max_length=512,
