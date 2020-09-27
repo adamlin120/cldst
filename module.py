@@ -10,11 +10,14 @@ BOS = "<bos>"
 EOS = "<eos>"
 PAD = "<pad>"
 BELIEF = "<BELIEF>"
+SLOT_SEP = "<SLOT>"
+SLOT_NAME_SEP = "<SLOT_NAME>"
+SLOT_VALUE_SEP = "<SLOT_VALUE>"
 ATTR_TO_SPECIAL_TOKEN = {
     "bos_token": BOS,
     "eos_token": EOS,
     "pad_token": PAD,
-    "additional_special_tokens": [BELIEF],
+    "additional_special_tokens": [BELIEF, SLOT_SEP, SLOT_NAME_SEP, SLOT_VALUE_SEP],
 }
 
 

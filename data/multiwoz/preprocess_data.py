@@ -13,6 +13,10 @@ logging.basicConfig(
 )
 
 
+SLOT_SEP = "<SLOT>"
+SLOT_NAME_SEP = "<SLOT_NAME>"
+SLOT_VALUE_SEP = "<SLOT_VALUE>"
+
 USER = {"en": "user", "zh": "用戶"}
 SYSTEM = {"en": "system", "zh": "系统"}
 
@@ -55,8 +59,9 @@ def clean_slot_value(
     belief: Dict, sorted_slot_list: List[str], readable_slot: Dict[str, str]
 ) -> List[str]:
     clean_belief = [
-        f"{' # '.join(list(map(lambda x: x.strip(), readable_slot.get(slot_name, slot_name).split('-'))))}"
-        f" = "
+        f"{SLOT_SEP} "
+        f"{f' {SLOT_NAME_SEP} '.join(list(map(lambda x: x.strip(), readable_slot.get(slot_name, slot_name).split('-'))))}"
+        f" {SLOT_VALUE_SEP} "
         f"{belief[slot_name].strip()}".strip()
         for slot_name in sorted_slot_list
         if not is_empty_slot(belief.get(slot_name, ""))
@@ -97,7 +102,7 @@ def main():
                     belief = turn["metadata"]
                     belief = canonicalize_slot_name(belief, args.mode)
                     belief = clean_slot_value(belief, sorted_slot_list, readable_slots)
-                    belief = " , ".join(belief)
+                    belief = " ".join(belief)
 
                     data[f"{dialogue_id}-{turn_id}"] = {
                         "belief": belief,
