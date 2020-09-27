@@ -4,7 +4,7 @@ import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-from transformers import BertTokenizer, GPT2LMHeadModel, TextGenerationPipeline
+from transformers import BertTokenizer, GPT2LMHeadModel
 from tqdm.auto import tqdm
 
 from module import EOS
@@ -20,24 +20,20 @@ def main(args: Namespace):
 
     eos_token_id = tokenizer.convert_tokens_to_ids(EOS)
 
-    pipeline = TextGenerationPipeline(
-        model, tokenizer, framework="pt", device=args.cuda_device
-    )
-
     test_set = json.loads(Path(args.test_set).read_text())
     pred = {}
 
     for i, (id, turn) in tqdm(enumerate(test_set.items())):
         history = turn["history"]
         history = build_test_string(history)
-        build_input_from_segments(history, turn["belief"], tokenizer)
-        gen = pipeline(
-            history,
+        input_ids = tokenizer(history, add_special_tokens=False)
+        gen = model.generate(
+            input_ids,
             max_length=512,
             eos_token_id=eos_token_id,
             clean_up_tokenization_spaces=False,
         )
-        pred[id] = gen[0]["generated_text"]
+        pred[id] = tokenizer.decode(gen[0])
         if i > 10:
             break
     Path(
