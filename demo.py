@@ -30,9 +30,9 @@ def main(args: Namespace):
     for i, (id, turn) in tqdm(enumerate(test_set.items())):
         history = turn["history"]
         history = build_test_string(history)
-        input_ids = tokenizer(history, add_special_tokens=False)["input_ids"].cuda(
-            args.cuda_device
-        )
+        input_ids = tokenizer(history, add_special_tokens=False, return_tensors="pt")[
+            "input_ids"
+        ].cuda(args.cuda_device)
         gen = model.generate(
             input_ids,
             max_length=512,
