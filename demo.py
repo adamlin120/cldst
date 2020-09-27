@@ -1,10 +1,11 @@
 import json
+import os
 import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-import pdb
 
 from transformers import BertTokenizer, GPT2LMHeadModel, TextGenerationPipeline
+from tqdm.auto import tqdm
 
 from module import EOS
 from multiwoz_data_module import build_test_string
@@ -24,9 +25,9 @@ def main(args: Namespace):
     )
 
     test_set = json.loads(Path(args.test_set).read_text())
+    pred = {}
 
-    for id, turn in test_set.items():
-        # history = input("History:")
+    for id, turn in tqdm(test_set.items()):
         history = turn["history"]
         history = build_test_string(history)
         gen = pipeline(
@@ -34,17 +35,18 @@ def main(args: Namespace):
             max_length=512,
             eos_token_id=eos_token_id,
             clean_up_tokenization_spaces=False,
-            return_tensors=True,
         )
-        print(gen, turn["belief"])
-        pdb.set_trace()
+        pred[id] = gen[0]["generated_text"]
+    Path(
+        args.test_set + "." + os.path.basename(os.path.dirname(args.checkpoint_path))
+    ).write_text(json.dumps(pred))
 
 
 def parse_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("checkpoint_path")
     parser.add_argument(
-        "--test_set", type=str, default="./data/multiwoz/seq2seq/zh/test.json"
+        "--test_set", type=str, default="./data/multiwoz/processed/zh/test.json"
     )
     parser.add_argument("--cuda_device", type=int, default=0)
     return parser.parse_args()
