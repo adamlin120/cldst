@@ -105,7 +105,7 @@ class MultiWOZDataModule(pl.LightningDataModule):
         parent_parser.add_argument(
             "--data_dir",
             type=str,
-            default="data/multiwoz/seq2seq/zh/",
+            default="data/multiwoz/processed/zh/",
             help="Path of the dataset.",
         )
         parent_parser.add_argument("--batch_size", type=int, default=2)
