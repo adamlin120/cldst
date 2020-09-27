@@ -60,9 +60,9 @@ def clean_slot_value(
 ) -> List[str]:
     clean_belief = [
         f"{SLOT_SEP} "
-        f"{f' {SLOT_NAME_SEP} '.join(list(map(lambda x: x.strip(), readable_slot.get(slot_name, slot_name).split('-'))))}"
+        f"{f' {SLOT_NAME_SEP} '.join(list(map(lambda x: ' '.join(x.strip()), readable_slot.get(slot_name, slot_name).split('-'))))}"
         f" {SLOT_VALUE_SEP} "
-        f"{belief[slot_name].strip()}".strip()
+        f"{' '.join(belief[slot_name].strip())}".strip()
         for slot_name in sorted_slot_list
         if not is_empty_slot(belief.get(slot_name, ""))
     ]
@@ -106,7 +106,7 @@ def main():
 
                     data[f"{dialogue_id}-{turn_id}"] = {
                         "belief": belief,
-                        "history": history.strip(),
+                        "history": " ".join(history.strip()),
                     }
                     history += f"{speaker}:{turn['text']} "
                 else:

@@ -8,7 +8,7 @@ from transformers import BertTokenizer, GPT2LMHeadModel, TextGenerationPipeline
 from tqdm.auto import tqdm
 
 from module import EOS
-from multiwoz_data_module import build_test_string
+from multiwoz_data_module import build_test_string, build_input_from_segments
 
 
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +30,7 @@ def main(args: Namespace):
     for i, (id, turn) in tqdm(enumerate(test_set.items())):
         history = turn["history"]
         history = build_test_string(history)
+        build_input_from_segments(history, turn["belief"], tokenizer)
         gen = pipeline(
             history,
             max_length=512,
