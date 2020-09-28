@@ -16,6 +16,7 @@ from module import EOS
 from multiwoz_data_module import build_test_string
 
 MAX_LENGTH = 512
+MAX_FOR_PROMPT = MAX_LENGTH - 100
 
 
 logging.basicConfig(level=logging.INFO)
@@ -89,11 +90,12 @@ def main(args: Namespace):
         history = build_test_string(history)
         input_ids = tokenizer(
             history,
-            max_length=MAX_LENGTH,
             truncation=True,
             add_special_tokens=False,
             return_tensors="pt",
         )["input_ids"].to(device)
+        if len(input_ids) >= MAX_FOR_PROMPT:
+            input_ids = input_ids[-MAX_FOR_PROMPT:]
         gen = model.generate(
             input_ids,
             max_length=MAX_LENGTH,
