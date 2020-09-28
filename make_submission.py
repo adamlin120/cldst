@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict
 from copy import deepcopy
 from collections import defaultdict
+from difflib import get_close_matches
 
 import torch
 from transformers import BertTokenizer, GPT2LMHeadModel
@@ -88,12 +89,9 @@ def main(args: Namespace):
         dialogue_id = id.split("-", 1)[0]
         history = turn["history"]
         history = build_test_string(history)
-        input_ids = tokenizer(
-            history,
-            truncation=True,
-            add_special_tokens=False,
-            return_tensors="pt",
-        )["input_ids"].to(device)
+        input_ids = tokenizer(history, add_special_tokens=False, return_tensors="pt",)[
+            "input_ids"
+        ].to(device)
         if len(input_ids[0]) >= MAX_FOR_PROMPT:
             input_ids = input_ids[:, -MAX_FOR_PROMPT:]
         gen = model.generate(
@@ -131,7 +129,17 @@ def parse_belief(gen: str) -> Dict[str, Dict[str, str]]:
         slot_value = slot[2] if len(slot) >= 3 else ""
 
         domain = remove_spaces(domain)
+        if not domain.strip():
+            continue
+        if domain not in belief.keys():
+            domain = get_close_matches(domain, list(belief.keys()), 1)[0]
+
         slot_name = remove_spaces(slot_name)
+        if not slot_name.strip():
+            continue
+        if slot_name not in belief[domain].keys():
+            slot_name = get_close_matches(slot_name, list(belief.keys()), 1)[0]
+
         slot_value = remove_spaces(slot_value)
         belief[domain][slot_name] = slot_value
     return belief
