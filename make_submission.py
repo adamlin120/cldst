@@ -101,8 +101,8 @@ def main(args: Namespace):
             pad_token_id=eos_token_id,
         )
         gen_str = tokenizer.decode(gen[0])
-        pred_belief = parse_belief(gen_str)
-        pred[dialogue_id].append(pred_belief)
+        # pred_belief = parse_belief(gen_str)
+        pred[dialogue_id].append(gen_str)
 
         if args.debug and i > 4:
             break
