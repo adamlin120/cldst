@@ -94,8 +94,8 @@ def main(args: Namespace):
             add_special_tokens=False,
             return_tensors="pt",
         )["input_ids"].to(device)
-        if len(input_ids) >= MAX_FOR_PROMPT:
-            input_ids = input_ids[-MAX_FOR_PROMPT:]
+        if len(input_ids[0]) >= MAX_FOR_PROMPT:
+            input_ids = input_ids[:, -MAX_FOR_PROMPT:]
         gen = model.generate(
             input_ids,
             max_length=MAX_LENGTH,
