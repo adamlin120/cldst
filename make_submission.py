@@ -1,13 +1,9 @@
-import re
 import json
 import os
 import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Dict
-from copy import deepcopy
 from collections import defaultdict
-from difflib import get_close_matches
 
 import torch
 from transformers import BertTokenizer, GPT2LMHeadModel
@@ -18,6 +14,8 @@ from multiwoz_data_module import build_test_string
 
 MAX_LENGTH = 512
 MAX_FOR_PROMPT = MAX_LENGTH - 100
+
+ONTOLOGY = json.loads(Path("./data/multiwoz/zh/ontology-data.json").read_text())
 
 
 logging.basicConfig(level=logging.INFO)
@@ -101,57 +99,20 @@ def main(args: Namespace):
             pad_token_id=eos_token_id,
         )
         gen_str = tokenizer.decode(gen[0])
-        # pred_belief = parse_belief(gen_str)
         pred[dialogue_id].append(gen_str)
 
         if args.debug and i > 4:
             break
 
-    Path(
-        args.test_set + "." + os.path.basename(os.path.dirname(args.checkpoint_path))
-    ).write_text(json.dumps(pred, ensure_ascii=False, indent=4))
-
-
-def parse_belief(gen: str) -> Dict[str, Dict[str, str]]:
-    slots = list(
-        map(
-            lambda x: re.split("<SLOT_NAME>|<SLOT_VALUE>", x),
-            re.split(
-                "<SLOT>",
-                gen.split("<BELIEF>", 1)[-1].split("<eos>", 1)[0].strip(),
-            )[1:],
-        )
+    Path(args.test_set + "." + args.output_tag).write_text(
+        json.dumps(pred, ensure_ascii=False, indent=4)
     )
-    belief = deepcopy(belief_template)
-    for slot in slots:
-        domain = slot[0]
-        slot_name = slot[1] if len(slot) >= 2 else ""
-        slot_value = slot[2] if len(slot) >= 3 else ""
-
-        domain = remove_spaces(domain)
-        if not domain.strip():
-            continue
-        if domain not in belief.keys():
-            domain = get_close_matches(domain, list(belief.keys()), 1)[0]
-
-        slot_name = remove_spaces(slot_name)
-        if not slot_name.strip():
-            continue
-        if slot_name not in belief[domain].keys():
-            slot_name = get_close_matches(slot_name, list(belief.keys()), 1)[0]
-
-        slot_value = remove_spaces(slot_value)
-        belief[domain][slot_name] = slot_value
-    return belief
-
-
-def remove_spaces(text: str) -> str:
-    return "".join(text.split())
 
 
 def parse_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("checkpoint_path")
+    parser.add_argument("output_tag")
     parser.add_argument(
         "--test_set", type=str, default="./data/multiwoz/processed/zh/test.json"
     )
