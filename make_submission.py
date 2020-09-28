@@ -121,8 +121,8 @@ def parse_belief(gen: str) -> Dict[str, Dict[str, str]]:
     belief = deepcopy(belief_template)
     for slot in slots:
         domain = slot[0]
-        slot_name = slot[1] if len(slots) >= 2 else ""
-        slot_value = slot[2] if len(slots) >= 3 else ""
+        slot_name = slot[1] if len(slot) >= 2 else ""
+        slot_value = slot[2] if len(slot) >= 3 else ""
 
         domain = remove_spaces(domain)
         slot_name = remove_spaces(slot_name)
