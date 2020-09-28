@@ -87,9 +87,13 @@ def main(args: Namespace):
         dialogue_id = id.split("-", 1)[0]
         history = turn["history"]
         history = build_test_string(history)
-        input_ids = tokenizer(history, add_special_tokens=False, return_tensors="pt")[
-            "input_ids"
-        ].to(device)
+        input_ids = tokenizer(
+            history,
+            max_length=MAX_LENGTH,
+            truncation=True,
+            add_special_tokens=False,
+            return_tensors="pt",
+        )["input_ids"].to(device)
         gen = model.generate(
             input_ids,
             max_length=MAX_LENGTH,
