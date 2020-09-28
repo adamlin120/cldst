@@ -100,7 +100,7 @@ def main(args: Namespace):
         pred_belief = parse_belief(gen_str)
         pred[dialogue_id].append(pred_belief)
 
-        if i > 4:
+        if args.debug and i > 4:
             break
 
     Path(
@@ -138,6 +138,7 @@ def parse_args() -> Namespace:
         "--test_set", type=str, default="./data/multiwoz/processed/zh/test.json"
     )
     parser.add_argument("--cuda_device", type=int, default=0)
+    parser.add_argument("--debug", action="store_ture")
     return parser.parse_args()
 
 
