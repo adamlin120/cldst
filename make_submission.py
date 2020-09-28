@@ -138,7 +138,7 @@ def parse_args() -> Namespace:
         "--test_set", type=str, default="./data/multiwoz/processed/zh/test.json"
     )
     parser.add_argument("--cuda_device", type=int, default=0)
-    parser.add_argument("--debug", action="store_ture")
+    parser.add_argument("--debug", action="store_true")
     return parser.parse_args()
 
 
