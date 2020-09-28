@@ -12,3 +12,7 @@ rm human_val_data.zip
 wget "https://github.com/ConvLab/ConvLab-2/raw/master/data/multiwoz_zh/mt_data.zip"
 unzip mt_data.zip
 rm mt_data.zip
+
+wget "https://github.com/ConvLab/ConvLab-2/raw/master/data/multiwoz_zh/dstc9-test-250.zip"
+unzip dstc9-test-250.zip
+rm dstc9-test-250.zip
