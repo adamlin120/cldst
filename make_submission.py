@@ -6,7 +6,7 @@ from pathlib import Path
 from collections import defaultdict
 
 import torch
-from transformers import BertTokenizer, GPT2LMHeadModel
+from transformers import BertTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 from tqdm.auto import tqdm
 
 from module import EOS
@@ -76,7 +76,9 @@ belief_template = {
 def main(args: Namespace):
     device = torch.device("cpu" if args.cuda_device < 0 else args.cuda_device)
     model = GPT2LMHeadModel.from_pretrained(args.checkpoint_path).eval().to(device)
-    tokenizer = BertTokenizer.from_pretrained(args.checkpoint_path)
+
+    tokenizer_class = GPT2Tokenizer if args.gpt2_tokenizer else BertTokenizer
+    tokenizer = tokenizer_class.from_pretrained(args.checkpoint_path)
 
     eos_token_id = tokenizer.convert_tokens_to_ids(EOS)
 
@@ -117,6 +119,11 @@ def parse_args() -> Namespace:
         "--test_set", type=str, default="./data/multiwoz/processed/zh/test.json"
     )
     parser.add_argument("--cuda_device", type=int, default=0)
+    parser.add_argument(
+        "--gpt2_tokenizer",
+        action="store_true",
+        help="use gpt2 tokenizer instead of bert tokenizer",
+    )
     parser.add_argument("--debug", action="store_true")
     return parser.parse_args()
 

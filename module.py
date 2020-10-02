@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, Namespace
 
 from pytorch_lightning import LightningModule, TrainResult, EvalResult
-from transformers import AdamW, BertTokenizer, GPT2LMHeadModel
+from transformers import AdamW, BertTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from preprocess_multiwoz_data import SLOT_SEP, SLOT_NAME_SEP, SLOT_VALUE_SEP
@@ -28,7 +28,10 @@ class ConditionalLM(LightningModule):
         super().__init__()
         self.hparams = hparams
 
-        self.tokenizer = BertTokenizer.from_pretrained(
+        tokenizer_class = (
+            GPT2Tokenizer if self.hparams.gpt2_tokenizer else BertTokenizer
+        )
+        self.tokenizer = tokenizer_class.from_pretrained(
             self.hparams.model_checkpoint, do_lower_case=True
         )
         self.model = GPT2LMHeadModel.from_pretrained(self.hparams.model_checkpoint)
@@ -80,6 +83,11 @@ class ConditionalLM(LightningModule):
             type=str,
             default="models/CDial-GPT2_LCCC-base/",
             help="Dir path to pretrained model",
+        )
+        parser.add_argument(
+            "--gpt2_tokenizer",
+            action="store_true",
+            help="use gpt2 tokenizer instead of bert tokenizer",
         )
         parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate")
         return parser

@@ -6,7 +6,7 @@ from argparse import ArgumentParser, Namespace
 import pytorch_lightning as pl
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer
+from transformers import BertTokenizer, GPT2Tokenizer
 
 from module import BOS, EOS, BELIEF, IGNORE_INDEX, ATTR_TO_SPECIAL_TOKEN, PAD
 
@@ -50,7 +50,11 @@ class MultiWOZDataModule(pl.LightningDataModule):
     ):
         super().__init__()
         self.hparams = hparams
-        self.tokenizer = BertTokenizer.from_pretrained(
+
+        tokenizer_class = (
+            GPT2Tokenizer if self.hparams.gpt2_tokenizer else BertTokenizer
+        )
+        self.tokenizer = tokenizer_class.from_pretrained(
             self.hparams.model_checkpoint, do_lower_case=True
         )
         self.tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
