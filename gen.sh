@@ -11,7 +11,7 @@ do
     DATA="./data/${DATASET}/processed/${LANG}/${SPLIT}.json"
     echo "${CKPT}"
     echo "${DATA}"
-    python make_submission.py "ytlin/${CKPT}" "${CKPT}" --test_set "${DATA}"
+    python make_submission.py "ytlin/${CKPT}" "${CKPT}" "${DATA}"
 #    python parse_output.py "${DATA}.${CKPT}"
   done
 done

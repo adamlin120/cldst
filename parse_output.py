@@ -7,7 +7,8 @@ from difflib import get_close_matches
 from pathlib import Path
 from typing import Dict
 
-from make_submission import belief_template, ONTOLOGY
+
+ONTOLOGY = json.loads(Path("./data/multiwoz/zh/ontology-data.json").read_text())
 
 MAX_LENGTH = 512
 MAX_FOR_PROMPT = MAX_LENGTH - 100
@@ -16,55 +17,89 @@ NOT_MENSION = "未提及"
 
 logging.basicConfig(level=logging.INFO)
 
-belief_template = {
-    "出租车": {
-        "出发时间": "",
-        "目的地": "",
-        "出发地": "",
-        "到达时间": "",
+belief_templates = {
+    "multiwoz-zh": {
+        "出租车": {
+            "出发时间": "",
+            "目的地": "",
+            "出发地": "",
+            "到达时间": "",
+        },
+        "餐厅": {
+            "时间": "",
+            "日期": "",
+            "人数": "",
+            "食物": "",
+            "价格范围": "",
+            "名称": "",
+            "区域": "",
+        },
+        "公共汽车": {
+            "人数": "",
+            "出发时间": "",
+            "目的地": "",
+            "日期": "",
+            "到达时间": "",
+            "出发地": "",
+        },
+        "旅馆": {
+            "停留天数": "",
+            "日期": "",
+            "人数": "",
+            "名称": "",
+            "区域": "",
+            "停车处": "",
+            "价格范围": "",
+            "星级": "",
+            "互联网": "",
+            "类型": "",
+        },
+        "景点": {
+            "类型": "",
+            "名称": "",
+            "区域": "",
+        },
+        "列车": {
+            "票价": "",
+            "人数": "",
+            "出发时间": "",
+            "目的地": "",
+            "日期": "",
+            "到达时间": "",
+            "出发地": "",
+        },
     },
-    "餐厅": {
-        "时间": "",
-        "日期": "",
-        "人数": "",
-        "食物": "",
-        "价格范围": "",
-        "名称": "",
-        "区域": "",
-    },
-    "公共汽车": {
-        "人数": "",
-        "出发时间": "",
-        "目的地": "",
-        "日期": "",
-        "到达时间": "",
-        "出发地": "",
-    },
-    "旅馆": {
-        "停留天数": "",
-        "日期": "",
-        "人数": "",
-        "名称": "",
-        "区域": "",
-        "停车处": "",
-        "价格范围": "",
-        "星级": "",
-        "互联网": "",
-        "类型": "",
-    },
-    "景点": {
-        "类型": "",
-        "名称": "",
-        "区域": "",
-    },
-    "列车": {
-        "票价": "",
-        "人数": "",
-        "出发时间": "",
-        "目的地": "",
-        "日期": "",
-        "到达时间": "",
-        "出发地": "",
+    "crosswoz-zh": {
+        "Attraction": {
+            "name": "",
+            "fee": "",
+            "duration": "",
+            "rating": "",
+            "nearby attract.": "",
+            "nearby rest.": "",
+            "nearby hotels": "",
+        },
+        "Restaurant": {
+            "name": "",
+            "dishes": "",
+            "cost": "",
+            "rating": "",
+            "nearby attract.": "",
+            "nearby rest.": "",
+            "nearby hotels": "",
+        },
+        "Hotel": {
+            "name": "",
+            "type": "",
+            "Hotel Facilities": "",
+            "price": "",
+            "rating": "",
+            "nearby attract.": "",
+            "nearby rest.": "",
+            "nearby hotels": "",
+        },
+        "Metro": {"from": "", "to": ""},
+        "Taxi": {"from": "", "to": ""},
     },
 }
 SLOTS_NEED_NOT_MENSIONED = {
