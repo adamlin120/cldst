@@ -1,8 +1,9 @@
 RUNID=${1}
-DATASET=${2:-"crosswoz"}
-LANG=${3:-"en"}
+EPOCHS=${2}
+DATASET=${3:-"crosswoz"}
+LANG=${4:-"en"}
 
-for EPOCH in 1 6 9
+for EPOCH in $EPOCHS
 do
   for SPLIT in val human_val test data
   do
@@ -11,6 +12,6 @@ do
     echo "${CKPT}"
     echo "${DATA}"
     python make_submission.py "ytlin/${CKPT}" "${CKPT}" --test_set "${DATA}"
-    python parse_output.py "${DATA}.${CKPT}"
+#    python parse_output.py "${DATA}.${CKPT}"
   done
 done
