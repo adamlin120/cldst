@@ -7,8 +7,8 @@ from difflib import get_close_matches
 from pathlib import Path
 from typing import Dict
 
+from tqdm.auto import tqdm
 
-ONTOLOGY = json.loads(Path("./data/multiwoz/zh/ontology-data.json").read_text())
 
 MAX_LENGTH = 512
 MAX_FOR_PROMPT = MAX_LENGTH - 100
@@ -69,7 +69,7 @@ belief_templates = {
             "出发地": "",
         },
     },
-    "crosswoz-zh": {
+    "crosswoz-en": {
         "Attraction": {
             "name": "",
             "fee": "",
@@ -112,26 +112,12 @@ SLOTS_NEED_NOT_MENSIONED = {
 }
 
 
-def main(args: Namespace):
-    test_set = json.loads(Path(args.input).read_text())
-
-    for dialogue_id, preds in test_set.items():
-        for i, gen_str in enumerate(preds):
-            belief = parse_belief(gen_str)
-            belief = add_not_mension(belief)
-            test_set[dialogue_id][i] = belief
-
-    Path(args.input + ".submission").write_text(
-        json.dumps(test_set, ensure_ascii=False, indent=4)
-    )
-
-
 def add_not_mension(belief: Dict[str, Dict[str, str]]) -> Dict[str, Dict[str, str]]:
     return {
         domain: {
             slot_name: NOT_MENSION
             if any(v.strip() for v in domain_slots.values())
-            and slot_name in SLOTS_NEED_NOT_MENSIONED[domain]
+            and slot_name in SLOTS_NEED_NOT_MENSIONED.get(domain, {})
             and not slot_value.strip()
             else slot_value
             for slot_name, slot_value in domain_slots.items()
@@ -140,13 +126,7 @@ def add_not_mension(belief: Dict[str, Dict[str, str]]) -> Dict[str, Dict[str, st
     }
 
 
-def parse_args() -> Namespace:
-    parser = ArgumentParser()
-    parser.add_argument("input", type=str)
-    return parser.parse_args()
-
-
-def parse_belief(gen: str) -> Dict[str, Dict[str, str]]:
+def parse_belief(gen: str, belief_template, ontology) -> Dict[str, Dict[str, str]]:
     slots = list(
         map(
             lambda x: re.split("<SLOT_NAME>|<SLOT_VALUE>", x),
@@ -178,7 +158,7 @@ def parse_belief(gen: str) -> Dict[str, Dict[str, str]]:
         slot_value = remove_spaces(slot_value)
         if not slot_value.split():
             continue
-        possible_values = ONTOLOGY[domain][slot_name]
+        possible_values = ontology[domain][slot_name]
         if slot_value not in possible_values:
             slot_value = get_close_matches(slot_value, possible_values, 1, 0)[0]
 
@@ -190,5 +170,32 @@ def remove_spaces(text: str) -> str:
     return "".join(text.split())
 
 
+def parse_args() -> Namespace:
+    parser = ArgumentParser()
+    parser.add_argument("input", type=Path)
+    parser.add_argument("output", type=Path)
+    parser.add_argument("dataset", type=str, choices=["multiwoz", "crosswoz"])
+    parser.add_argument("lang", type=str, choices=["en", "zh"])
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    ontology = json.loads(
+        Path(f"./data/{args.dataset}/{args.lang}/ontology-data.json").read_text()
+    )
+    test_set = json.loads(args.input.read_text())
+
+    belief_template = belief_templates[f"{args.dataset}-{args.lang}"]
+
+    for dialogue_id, preds in tqdm(test_set.items()):
+        for i, gen_str in enumerate(preds):
+            belief = parse_belief(gen_str, belief_template, ontology)
+            belief = add_not_mension(belief)
+            test_set[dialogue_id][i] = belief
+
+    args.output.write_text(json.dumps(test_set, ensure_ascii=False, indent=4))
+
+
 if __name__ == "__main__":
-    main(parse_args())
+    main()
