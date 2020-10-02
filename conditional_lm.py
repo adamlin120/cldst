@@ -1,14 +1,125 @@
+import logging
+import os
 import json
 from typing import Dict, List
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 
-import pytorch_lightning as pl
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer, GPT2Tokenizer
+from pytorch_lightning import (
+    Trainer,
+    seed_everything,
+    loggers,
+    LightningModule,
+    LightningDataModule,
+    TrainResult,
+    EvalResult,
+)
+from pytorch_lightning.callbacks import ModelCheckpoint
+from transformers import AdamW, BertTokenizer, GPT2LMHeadModel, GPT2Tokenizer
+from transformers.modeling_outputs import CausalLMOutputWithPast
 
-from module import BOS, EOS, BELIEF, IGNORE_INDEX, ATTR_TO_SPECIAL_TOKEN, PAD
+from preprocess_multiwoz_data import SLOT_SEP, SLOT_NAME_SEP, SLOT_VALUE_SEP
+
+
+logging.basicConfig(level=logging.INFO)
+
+
+IGNORE_INDEX = -100
+BOS = "<bos>"
+EOS = "<eos>"
+PAD = "<pad>"
+BELIEF = "<BELIEF>"
+ATTR_TO_SPECIAL_TOKEN = {
+    "bos_token": BOS,
+    "eos_token": EOS,
+    "pad_token": PAD,
+    "additional_special_tokens": [BELIEF, SLOT_SEP, SLOT_NAME_SEP, SLOT_VALUE_SEP],
+}
+
+
+class ConditionalLM(LightningModule):
+    def __init__(
+        self,
+        hparams: Namespace,
+    ):
+        super().__init__()
+        self.hparams = hparams
+
+        tokenizer_class = (
+            GPT2Tokenizer if self.hparams.gpt2_tokenizer else BertTokenizer
+        )
+        self.tokenizer = tokenizer_class.from_pretrained(
+            self.hparams.model_checkpoint, do_lower_case=True
+        )
+        self.model = GPT2LMHeadModel.from_pretrained(self.hparams.model_checkpoint)
+        # Add special tokens if they are not already added
+        add_special_tokens_(self.model, self.tokenizer)
+
+    def forward(self, *args, **kwargs) -> CausalLMOutputWithPast:
+        return self.model.forward(return_dict=True, *args, **kwargs)
+
+    def training_step(self, batch, batch_idx) -> TrainResult:
+        output = self.forward(**batch)
+        result = TrainResult(
+            minimize=output.loss,
+        )
+        result.log("train_loss", output.loss.detach(), prog_bar=True, on_epoch=True)
+        return result
+
+    def validation_step(self, batch, batch_idx) -> EvalResult:
+        output = self.forward(**batch)
+        result = EvalResult(checkpoint_on=output.loss, early_stop_on=output.loss)
+        result.log(
+            "val_loss",
+            output.loss,
+            prog_bar=True,
+        )
+        return result
+
+    def test_step(self, batch, batch_idx) -> EvalResult:
+        output = self.forward(**batch)
+        result = EvalResult(checkpoint_on=output.loss, early_stop_on=output.loss)
+        result.log(
+            "test_loss",
+            output.loss,
+            prog_bar=True,
+        )
+        return result
+
+    def configure_optimizers(self):
+        optimizer = AdamW(
+            self.model.parameters(), lr=self.hparams.lr, correct_bias=True
+        )
+        return optimizer
+
+    @staticmethod
+    def add_model_specific_args(parent_parser):
+        parser = ArgumentParser(parents=[parent_parser])
+        parser.add_argument(
+            "--model_checkpoint",
+            type=str,
+            default="models/CDial-GPT2_LCCC-base/",
+            help="Dir path to pretrained model",
+        )
+        parser.add_argument(
+            "--gpt2_tokenizer",
+            action="store_true",
+            help="use gpt2 tokenizer instead of bert tokenizer",
+        )
+        parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate")
+        return parser
+
+
+def add_special_tokens_(model, tokenizer):
+    """Add special tokens to the tokenizer and the model if they have not
+    already been added."""
+    orig_num_tokens = len(tokenizer)
+    # doesn't add if they are already there
+    num_added_tokens = tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
+    if num_added_tokens > 0:
+        model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
 
 
 class MultiwozDataset(Dataset):
@@ -43,7 +154,7 @@ class MultiwozDataset(Dataset):
         }
 
 
-class MultiWOZDataModule(pl.LightningDataModule):
+class MultiWOZDataModule(LightningDataModule):
     def __init__(
         self,
         hparams: Namespace,
@@ -161,3 +272,55 @@ def pad_truncate_sequence(
     ]
     padded_tensor = torch.tensor(padded_seq, dtype=torch.long)
     return padded_tensor
+
+
+def main():
+    args = parse_args()
+    seed_everything(args.seed)
+
+    tb_logger = loggers.TensorBoardLogger("logs/")
+    wandb_logger = loggers.WandbLogger(save_dir="logs/", project="xldst")
+    assert wandb_logger.experiment.id
+    checkpoint_callback = ModelCheckpoint(
+        filepath=os.path.join(
+            "ckpts", wandb_logger.experiment.id, "{epoch}-{val_loss:.4f}"
+        ),
+        save_last=True,
+        save_top_k=2,
+        verbose=True,
+        monitor="val_loss",
+        mode="min",
+    )
+    trainer = Trainer.from_argparse_args(
+        args, logger=[tb_logger, wandb_logger], checkpoint_callback=checkpoint_callback
+    )
+    dm = MultiWOZDataModule(args)
+    dm.prepare_data()
+
+    dm.setup("fit")
+    model = ConditionalLM(args)
+    trainer.fit(model, datamodule=dm)
+
+    dm.setup("test")
+    trainer.test(datamodule=dm)
+
+
+def parse_args():
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument("--seed", type=int, default=13)
+
+    parser = ConditionalLM.add_model_specific_args(parser)
+    parser = MultiWOZDataModule.add_argparse_args(parser)
+    parser = Trainer.add_argparse_args(parser)
+
+    parser.set_defaults(
+        accumulate_grad_batches=2,
+        gradient_clip_val=1.0,
+    )
+
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    main()

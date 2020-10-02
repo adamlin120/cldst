@@ -56,3 +56,8 @@ unzip -o dstc9-test-250.zip
 rm dstc9-test-250.zip
 
 wget "https://raw.githubusercontent.com/ConvLab/ConvLab-2/master/data/crosswoz_en/ontology-data.json"
+
+python preprocess_crosswoz_data.py zh
+python preprocess_crosswoz_data.py en
+python preprocess_multiwoz_data.py zh
+python preprocess_multiwoz_data.py en

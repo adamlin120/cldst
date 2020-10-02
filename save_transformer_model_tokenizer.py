@@ -2,7 +2,7 @@ import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-from module import ConditionalLM
+from conditional_lm import ConditionalLM
 
 logging.basicConfig(level=logging.INFO)
 

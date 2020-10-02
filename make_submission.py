@@ -1,5 +1,4 @@
 import json
-import os
 import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
@@ -9,8 +8,7 @@ import torch
 from transformers import BertTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 from tqdm.auto import tqdm
 
-from module import EOS
-from multiwoz_data_module import build_test_string
+from conditional_lm import EOS, build_test_string
 
 MAX_LENGTH = 512
 MAX_FOR_PROMPT = MAX_LENGTH - 100
