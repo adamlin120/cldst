@@ -11,7 +11,6 @@ do
     DATA="./data/${DATASET}/processed/${LANG}/${SPLIT}.json"
     echo "${CKPT}"
     echo "${DATA}"
-    python make_submission.py "ytlin/${CKPT}" "${CKPT}" "${DATA}"
-#    python parse_output.py "${DATA}.${CKPT}"
+    python generate_conditional_lm_output.py "ytlin/${CKPT}" "${CKPT}" "${DATA}"
   done
 done
