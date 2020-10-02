@@ -4,15 +4,14 @@ from pytorch_lightning import LightningModule, TrainResult, EvalResult
 from transformers import AdamW, BertTokenizer, GPT2LMHeadModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
+from preprocess_multiwoz_data import SLOT_SEP, SLOT_NAME_SEP, SLOT_VALUE_SEP
+
 
 IGNORE_INDEX = -100
 BOS = "<bos>"
 EOS = "<eos>"
 PAD = "<pad>"
 BELIEF = "<BELIEF>"
-SLOT_SEP = "<SLOT>"
-SLOT_NAME_SEP = "<SLOT_NAME>"
-SLOT_VALUE_SEP = "<SLOT_VALUE>"
 ATTR_TO_SPECIAL_TOKEN = {
     "bos_token": BOS,
     "eos_token": EOS,

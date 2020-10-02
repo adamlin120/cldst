@@ -3,9 +3,11 @@ for EPOCH in 1 6 9
 do
   for SPLIT in test val human_val test data
   do
-    echo  "ytlin/${RUNID}_${EPOCH}"
-    echo  "${RUNID}_${EPOCH}"
-    echo  "./data/multiwoz/processed/zh/${SPLIT}.json"
-    python make_submission.py "ytlin/${RUNID}_${EPOCH}" "${RUNID}_${EPOCH}" --test_set "./data/multiwoz/processed/zh/${SPLIT}.json"
+    CKPT="${RUNID}_${EPOCH}"
+    DATA="./data/multiwoz/processed/zh/${SPLIT}.json"
+    echo "${CKPT}"
+    echo "${DATA}"
+    python make_submission.py "ytlin/${CKPT}" "${CKPT}" --test_set "${DATA}"
+    python parse_output.py "${DATA}.${CKPT}"
   done
 done
