@@ -39,7 +39,7 @@ def main(args: Namespace):
     preds = []
     for batch in tqdm(loader):
         gen = model.generate(
-            batch["input_ids"],
+            batch["input_ids"].to(device),
             max_length=MAX_LENGTH,
             eos_token_id=eos_token_id,
             pad_token_id=pad_token_id,
