@@ -28,7 +28,6 @@ def main(args: Namespace):
     model = GPT2LMHeadModel.from_pretrained(args.checkpoint_path).eval().to(device)
     tokenizer = AutoTokenizer.from_pretrained(args.checkpoint_path)
     eos_token_id = tokenizer.convert_tokens_to_ids(EOS)
-    pad_token_id = tokenizer.convert_tokens_to_ids(PAD)
 
     test_set_path = (
         Path("./data") / args.dataset / "processed" / args.lang / f"{args.split}.json"
@@ -50,7 +49,7 @@ def main(args: Namespace):
             attention_mask=batch["attention_mask"].to(device),
             max_length=MAX_LENGTH,
             eos_token_id=eos_token_id,
-            pad_token_id=pad_token_id,
+            pad_token_id=eos_token_id,
         )
         gen_str = tokenizer.batch_decode(gen)
         preds.extend(gen_str)

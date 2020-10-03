@@ -1,7 +1,7 @@
 import logging
 import os
 import json
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 
@@ -153,16 +153,19 @@ class MultiwozDataset(Dataset):
         return instance
 
     def collate_fn(self, batch: List[Dict[str, List[int]]]) -> Dict[str, torch.Tensor]:
-        return {
-            tensor_name: pad_truncate_sequence(
-                [i[tensor_name] for i in batch], self.pad_token_id, self.max_len
-            )
-            if tensor_name != "attention_mask"
-            else pad_truncate_attention_mask(
-                [i[tensor_name] for i in batch], self.max_len
-            )
-            for tensor_name in batch[0].keys()
+        out = {
+            "input_ids": pad_truncate_sequence(
+                [i["input_ids"] for i in batch], self.pad_token_id, self.max_len
+            ),
+            "labels": pad_truncate_sequence(
+                [i["input_ids"] for i in batch], IGNORE_INDEX, self.max_len
+            ),
+            "attention_mask": pad_truncate_attention_mask(
+                [i["attention_mask"] for i in batch], self.max_len
+            ),
         }
+        print(out)
+        return out
 
 
 class MultiWOZDataModule(LightningDataModule):
@@ -278,7 +281,6 @@ def build_input_from_segments(
 def pad_truncate_sequence(
     seq: List[List[int]], padding_value: int, max_length: int = 512
 ) -> torch.LongTensor:
-    max_length = min(max_length, max(len(s) for s in seq))
     padded_seq = [
         [padding_value] * (max_length - len(s)) + s[max(0, len(s) - max_length) :]
         for s in seq
@@ -290,7 +292,6 @@ def pad_truncate_sequence(
 def pad_truncate_attention_mask(
     seq: List[List[int]], max_length: int = 512
 ) -> torch.LongTensor:
-    max_length = min(max_length, max(len(s) for s in seq))
     attention_mask = [
         [0] * (max_length - len(s)) + s[max(0, len(s) - max_length) :] for s in seq
     ]
