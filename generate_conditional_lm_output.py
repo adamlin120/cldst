@@ -3,14 +3,13 @@ import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from collections import defaultdict
-from multiprocessing import cpu_count
 
+import ipdb
 import torch
-from torch.utils.data import DataLoader
-from transformers import GPT2LMHeadModel, AutoTokenizer
+from transformers import GPT2LMHeadModel, AutoTokenizer, BertTokenizer
 from tqdm.auto import tqdm
 
-from conditional_lm import EOS, PAD, MultiwozDataset
+from conditional_lm import EOS, PAD, build_input_from_segments
 
 MAX_LENGTH = 512
 MAX_FOR_PROMPT = MAX_LENGTH - 128
@@ -26,7 +25,9 @@ def main(args: Namespace):
         else args.cuda_device
     )
     model = GPT2LMHeadModel.from_pretrained(args.checkpoint_path).eval().to(device)
-    tokenizer = AutoTokenizer.from_pretrained(args.checkpoint_path)
+
+    tokenzier_class = AutoTokenizer if not args.use_bert_tokenizer else BertTokenizer
+    tokenizer = tokenzier_class.from_pretrained(args.checkpoint_path)
     eos_token_id = tokenizer.convert_tokens_to_ids(EOS)
     pad_token_id = tokenizer.convert_tokens_to_ids(PAD)
 
@@ -35,23 +36,18 @@ def main(args: Namespace):
     )
     test_set = json.loads(test_set_path.read_text())
 
-    dataset = MultiwozDataset(test_set_path, tokenizer, MAX_FOR_PROMPT, True)
-    loader = DataLoader(
-        dataset,
-        batch_size=args.batch_size,
-        collate_fn=dataset.collate_fn,
-        pin_memory=True,
-        num_workers=cpu_count(),
-    )
     preds = []
-    for i, batch in tqdm(enumerate(loader), total=len(loader)):
+    for i, (id, turn) in tqdm(enumerate(test_set.items()), total=len(test_set)):
+        batch = build_input_from_segments(turn["history"], None, tokenizer)
+        input_ids = torch.tensor([batch["input_ids"]], dtype=torch.long, device=device)
         gen = model.generate(
-            batch["input_ids"].to(device),
+            input_ids,
             max_length=MAX_LENGTH,
             eos_token_id=eos_token_id,
             pad_token_id=pad_token_id,
+            use_cache=True,
         )
-        gen_str = tokenizer.batch_decode(gen)
+        gen_str = tokenizer.batch_decode(gen)[0]
         preds.extend(gen_str)
         if i > 4 and args.debug:
             break
@@ -80,8 +76,8 @@ def parse_args() -> Namespace:
     parser.add_argument("lang", type=str, choices=["en", "zh"])
     parser.add_argument("split", type=str, choices=["val", "test", "test-250"])
     parser.add_argument("--cuda_device", type=int, default=0)
-    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--use_bert_tokenizer", action="store_true")
     return parser.parse_args()
 
 
