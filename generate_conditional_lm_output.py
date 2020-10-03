@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from transformers import GPT2LMHeadModel, AutoTokenizer
 from tqdm.auto import tqdm
 
-from conditional_lm import EOS, MultiwozDataset, PAD
+from conditional_lm import EOS, MultiwozDataset
 
 MAX_LENGTH = 512
 MAX_FOR_PROMPT = MAX_LENGTH - 128
@@ -46,7 +46,6 @@ def main(args: Namespace):
     for i, batch in tqdm(enumerate(loader), total=len(loader)):
         gen = model.generate(
             batch["input_ids"].to(device),
-            attention_mask=batch["attention_mask"].to(device),
             max_length=MAX_LENGTH,
             eos_token_id=eos_token_id,
             pad_token_id=eos_token_id,

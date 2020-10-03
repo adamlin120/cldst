@@ -160,9 +160,6 @@ class MultiwozDataset(Dataset):
             "labels": pad_truncate_sequence(
                 [i["labels"] for i in batch], IGNORE_INDEX, self.max_len
             ),
-            "attention_mask": pad_truncate_attention_mask(
-                [i["attention_mask"] for i in batch], self.max_len
-            ),
         }
         return out
 
@@ -267,12 +264,10 @@ def build_input_from_segments(
         input_ids += [*belief, eos]
         labels += [*belief, eos]
 
-    attention_mask = [1] * len(input_ids)
-    assert len(input_ids) == len(labels) == len(attention_mask)
+    assert len(input_ids) == len(labels)
     instance = {
         "input_ids": input_ids,
         "labels": labels,
-        "attention_mask": attention_mask,
     }
     return instance
 
@@ -280,22 +275,13 @@ def build_input_from_segments(
 def pad_truncate_sequence(
     seq: List[List[int]], padding_value: int, max_length: int = 512
 ) -> torch.LongTensor:
+    max_length = min(max_length, max(len(s) for s in seq))
     padded_seq = [
-        [padding_value] * (max_length - len(s)) + s[max(0, len(s) - max_length) :]
+        s[max(0, len(s) - max_length) :] + [padding_value] * (max_length - len(s))
         for s in seq
     ]
     padded_tensor = torch.tensor(padded_seq, dtype=torch.long)
     return padded_tensor
-
-
-def pad_truncate_attention_mask(
-    seq: List[List[int]], max_length: int = 512
-) -> torch.FloatTensor:
-    attention_mask = [
-        [0] * (max_length - len(s)) + s[max(0, len(s) - max_length) :] for s in seq
-    ]
-    attention_mask = torch.tensor(attention_mask, dtype=torch.float)
-    return attention_mask
 
 
 def main():
