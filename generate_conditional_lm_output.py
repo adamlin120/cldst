@@ -30,9 +30,10 @@ def main(args: Namespace):
     eos_token_id = tokenizer.convert_tokens_to_ids(EOS)
     pad_token_id = tokenizer.convert_tokens_to_ids(PAD)
 
-    test_set = json.loads(args.test_set.read_text())
+    test_set_path = Path("./data") / args.dataset / args.lang / f"{args.split}.json"
+    test_set = json.loads(test_set_path.read_text())
 
-    dataset = MultiwozDataset(args.test_set, tokenizer, MAX_FOR_PROMPT)
+    dataset = MultiwozDataset(test_set_path, tokenizer, MAX_FOR_PROMPT)
     loader = DataLoader(
         dataset,
         batch_size=args.batch_size,
@@ -56,16 +57,24 @@ def main(args: Namespace):
         dialogue_id, turn_id = id.split("-")
         pred_dump[dialogue_id].append(pred)
 
-    Path(args.test_set + "." + args.output_tag).write_text(
-        json.dumps(pred_dump, ensure_ascii=False, indent=4)
+    normalized_ckpt = args.checkpoint_path.replace("/", "_")
+    output_path = (
+        Path("./preds")
+        / args.dataset
+        / args.lang
+        / args.split
+        / f"{normalized_ckpt}.json"
     )
+    output_path.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(pred_dump, ensure_ascii=False, indent=4))
 
 
 def parse_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("checkpoint_path")
-    parser.add_argument("output_tag")
-    parser.add_argument("test_set", type=Path)
+    parser.add_argument("dataset", type=str, choices=["multiwoz", "crosswoz"])
+    parser.add_argument("lang", type=str, choices=["en", "zh"])
+    parser.add_argument("split", type=str, choices=["val", "test", "data"])
     parser.add_argument("--cuda_device", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=32)
     return parser.parse_args()

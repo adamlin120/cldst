@@ -7,10 +7,11 @@ for EPOCH in $EPOCHS
 do
   for SPLIT in val test data
   do
-    CKPT="${RUNID}_${EPOCH}"
-    DATA="./data/${DATASET}/processed/${LANG}/${SPLIT}.json"
+    CKPT="ytlin/${RUNID}_${EPOCH}"
     echo "${CKPT}"
-    echo "${DATA}"
-    python generate_conditional_lm_output.py "ytlin/${CKPT}" "${CKPT}" "${DATA}"
+    echo "${DATASET}"
+    echo "${LANG}"
+    echo "${SPLIT}"
+    python generate_conditional_lm_output.py "${CKPT}" "${DATASET}" "${LANG}" "${SPLIT}"
   done
 done
