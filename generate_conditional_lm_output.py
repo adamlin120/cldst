@@ -30,7 +30,9 @@ def main(args: Namespace):
     eos_token_id = tokenizer.convert_tokens_to_ids(EOS)
     pad_token_id = tokenizer.convert_tokens_to_ids(PAD)
 
-    test_set_path = Path("./data") / args.dataset / args.lang / f"{args.split}.json"
+    test_set_path = (
+        Path("./data") / args.dataset / "processed" / args.lang / f"{args.split}.json"
+    )
     test_set = json.loads(test_set_path.read_text())
 
     dataset = MultiwozDataset(test_set_path, tokenizer, MAX_FOR_PROMPT)
