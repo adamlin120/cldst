@@ -15,8 +15,8 @@ random.seed(13)
 LANG2LANG_CODE = {"zh": "zh_CN", "en": "en_XX"}
 IGNORE_IDX = -100
 
-max_length = 512
-max_target_length = 256
+max_length = 384
+max_target_length = 128
 
 
 def clean_chinese_spaces(text: str) -> str:
