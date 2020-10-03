@@ -68,3 +68,5 @@ python preprocess_crosswoz_single_turn_data.py zh
 python preprocess_crosswoz_single_turn_data.py en
 python preprocess_multiwoz_single_turn_data.py zh
 python preprocess_multiwoz_single_turn_data.py en
+
+python create_mbart_dataset.py
