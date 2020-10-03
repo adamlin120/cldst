@@ -291,7 +291,9 @@ def pad_truncate_attention_mask(
     seq: List[List[int]], max_length: int = 512
 ) -> torch.LongTensor:
     max_length = min(max_length, max(len(s) for s in seq))
-    attention_mask = [[0] * (max_length - len(s)) + s for s in seq]
+    attention_mask = [
+        [0] * (max_length - len(s)) + s[max(0, len(s) - max_length) :] for s in seq
+    ]
     attention_mask = torch.tensor(attention_mask, dtype=torch.long)
     return attention_mask
 
