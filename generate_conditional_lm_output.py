@@ -3,8 +3,8 @@ import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from collections import defaultdict
+from multiprocessing import cpu_count
 
-import ipdb
 import torch
 from torch.utils.data import DataLoader
 from transformers import GPT2LMHeadModel, AutoTokenizer
@@ -13,7 +13,7 @@ from tqdm.auto import tqdm
 from conditional_lm import EOS, MultiwozDataset, PAD
 
 MAX_LENGTH = 512
-MAX_FOR_PROMPT = MAX_LENGTH - 100
+MAX_FOR_PROMPT = MAX_LENGTH - 128
 
 
 logging.basicConfig(level=logging.INFO)
@@ -32,9 +32,13 @@ def main(args: Namespace):
 
     test_set = json.loads(args.test_set.read_text())
 
-    dataset = MultiwozDataset(args.test_set, tokenizer, 512)
+    dataset = MultiwozDataset(args.test_set, tokenizer, MAX_FOR_PROMPT)
     loader = DataLoader(
-        dataset, batch_size=args.batch_size, collate_fn=dataset.collate_fn
+        dataset,
+        batch_size=args.batch_size,
+        collate_fn=dataset.collate_fn,
+        pin_memory=True,
+        num_workers=cpu_count(),
     )
     preds = []
     for batch in tqdm(loader):
@@ -63,7 +67,7 @@ def parse_args() -> Namespace:
     parser.add_argument("output_tag")
     parser.add_argument("test_set", type=Path)
     parser.add_argument("--cuda_device", type=int, default=0)
-    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=16)
     return parser.parse_args()
 
 

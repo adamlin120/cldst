@@ -124,7 +124,7 @@ def add_special_tokens_(model, tokenizer):
 
 class MultiwozDataset(Dataset):
     def __init__(
-        self, path: Path, tokenizer: BertTokenizer, max_len: int = 256
+        self, path: Path, tokenizer: BertTokenizer, max_len: int = 512
     ) -> None:
         self.path = path
         self.tokenizer = tokenizer
