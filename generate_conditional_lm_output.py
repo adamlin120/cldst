@@ -53,7 +53,7 @@ def main(args: Namespace):
         )
         gen_str = tokenizer.batch_decode(gen)
         preds.extend(gen_str)
-        if i > 4:
+        if i > 4 and args.debug:
             break
 
     pred_dump = defaultdict(list)
