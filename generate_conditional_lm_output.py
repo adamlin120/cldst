@@ -44,7 +44,7 @@ def main(args: Namespace):
         num_workers=cpu_count(),
     )
     preds = []
-    for batch in tqdm(loader):
+    for i, batch in tqdm(enumerate(loader)):
         gen = model.generate(
             batch["input_ids"].to(device),
             attention_mask=batch["attention_mask"].to(device),
@@ -54,6 +54,8 @@ def main(args: Namespace):
         )
         gen_str = tokenizer.batch_decode(gen)
         preds.extend(gen_str)
+        if i > 4:
+            break
 
     pred_dump = defaultdict(list)
     for pred, id in zip(preds, test_set.keys()):
@@ -80,6 +82,7 @@ def parse_args() -> Namespace:
     parser.add_argument("split", type=str, choices=["val", "test", "test-250"])
     parser.add_argument("--cuda_device", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--debug", action="store_true")
     return parser.parse_args()
 
 
