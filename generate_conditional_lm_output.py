@@ -61,13 +61,13 @@ def main(args: Namespace):
 
     normalized_ckpt = args.checkpoint_path.replace("/", "_")
     output_path = (
-        Path("./preds")
+        Path("./submission")
         / args.dataset
         / args.lang
         / args.split
         / f"{normalized_ckpt}.json"
     )
-    output_path.mkdir(parents=True, exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(pred_dump, ensure_ascii=False, indent=4))
 
 
