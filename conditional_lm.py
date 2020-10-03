@@ -124,11 +124,16 @@ def add_special_tokens_(model, tokenizer):
 
 class MultiwozDataset(Dataset):
     def __init__(
-        self, path: Path, tokenizer: BertTokenizer, max_len: int = 512
+        self,
+        path: Path,
+        tokenizer: BertTokenizer,
+        max_len: int = 512,
+        testing: bool = False,
     ) -> None:
         self.path = path
         self.tokenizer = tokenizer
         self.max_len = max_len
+        self.testing = testing
 
         self.data = json.loads(self.path.read_text())
         self.turn_ids: List[str] = list(self.data.keys())
@@ -141,7 +146,9 @@ class MultiwozDataset(Dataset):
         turn_id = self.turn_ids[index]
         turn = self.data[turn_id]
         instance = build_input_from_segments(
-            turn["history"], turn.get("belief", ""), self.tokenizer
+            turn["history"],
+            turn.get("belief", "") if not self.testing else "",
+            self.tokenizer,
         )
         return instance
 
@@ -247,19 +254,16 @@ def build_input_from_segments(
         return tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x))
 
     bos, eos, bob = tokenizer.convert_tokens_to_ids([BOS, EOS, BELIEF])
-    belief: List[int] = tokenize_to_ids(belief)
     input_ids = [bos, *tokenize_to_ids(history), bob]
     labels = [IGNORE_INDEX] * len(input_ids)
-    input_ids += [*belief, eos]
-    labels += [*belief, eos]
+    if belief:
+        belief: List[int] = tokenize_to_ids(belief)
+        input_ids += [*belief, eos]
+        labels += [*belief, eos]
 
     assert len(input_ids) == len(labels)
     instance = {"input_ids": input_ids, "labels": labels}
     return instance
-
-
-def build_test_string(history: str) -> str:
-    return f"{BOS} {history} {BELIEF}"
 
 
 def pad_truncate_sequence(
