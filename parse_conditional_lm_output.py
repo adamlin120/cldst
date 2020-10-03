@@ -5,9 +5,9 @@ from argparse import ArgumentParser, Namespace
 from copy import deepcopy
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Dict
-
-from tqdm.auto import tqdm
+from typing import Dict, List
+from multiprocessing import cpu_count
+from multiprocessing.pool import Pool
 
 
 MAX_LENGTH = 512
@@ -163,7 +163,14 @@ def parse_belief(gen: str, belief_template, ontology) -> Dict[str, Dict[str, str
             slot_value = get_close_matches(slot_value, possible_values, 1, 0)[0]
 
         belief[domain][slot_name] = slot_value
+    belief = add_not_mension(belief)
     return belief
+
+
+def parse_dialogue_belief(preds: List[str], dialogue_id, belief_template, ontology):
+    return dialogue_id, [
+        parse_belief(gen_str, belief_template, ontology) for gen_str in preds
+    ]
 
 
 def remove_spaces(text: str) -> str:
@@ -184,17 +191,20 @@ def main():
     ontology = json.loads(
         Path(f"./data/{args.dataset}/{args.lang}/ontology-data.json").read_text()
     )
-    test_set = json.loads(args.input.read_text())
-
     belief_template = belief_templates[f"{args.dataset}-{args.lang}"]
+    test_set: Dict[str, List] = json.loads(args.input.read_text())
 
-    for dialogue_id, preds in tqdm(test_set.items()):
-        for i, gen_str in enumerate(preds):
-            belief = parse_belief(gen_str, belief_template, ontology)
-            belief = add_not_mension(belief)
-            test_set[dialogue_id][i] = belief
+    with Pool(cpu_count()) as pool:
+        out = pool.starmap(
+            parse_dialogue_belief,
+            [
+                (preds, dialogue_id, belief_template, ontology)
+                for dialogue_id, preds in test_set.items()
+            ],
+        )
+    dump_set = dict(out)
 
-    args.output.write_text(json.dumps(test_set, ensure_ascii=False, indent=4))
+    args.output.write_text(json.dumps(dump_set, ensure_ascii=False, indent=4))
 
 
 if __name__ == "__main__":

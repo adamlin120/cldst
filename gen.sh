@@ -5,7 +5,7 @@ LANG=${4:-"en"}
 
 for EPOCH in $EPOCHS
 do
-  for SPLIT in val human_val test data
+  for SPLIT in val test data
   do
     CKPT="${RUNID}_${EPOCH}"
     DATA="./data/${DATASET}/processed/${LANG}/${SPLIT}.json"

@@ -233,7 +233,7 @@ class MultiWOZDataModule(LightningDataModule):
         parent_parser.add_argument(
             "--max_len",
             type=int,
-            default=256,
+            default=512,
         )
         return parent_parser
 
@@ -263,7 +263,7 @@ def build_test_string(history: str) -> str:
 
 
 def pad_truncate_sequence(
-    seq: List[List[int]], padding_value: int, max_length: int = 1024
+    seq: List[List[int]], padding_value: int, max_length: int = 512
 ) -> torch.LongTensor:
     max_length = min(max_length, max(len(s) for s in seq))
     padded_seq = [
