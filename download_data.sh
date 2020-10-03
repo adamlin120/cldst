@@ -20,7 +20,7 @@ wget "https://github.com/ConvLab/ConvLab-2/raw/master/data/multiwoz_zh/dstc9-tes
 unzip -o dstc9-test-250.zip
 rm dstc9-test-250.zip
 
-wget "https://raw.githubusercontent.com/ConvLab/ConvLab-2/master/data/multiwoz_zh/ontology-data.json"
+wget "https://raw.githubusercontent.com/ConvLab/ConvLab-2/master/data/multiwoz_zh/ontology-data.json" -o ontology-data.json
 
 cd ../../crosswoz/
 
@@ -55,9 +55,16 @@ wget "https://github.com/ConvLab/ConvLab-2/raw/master/data/crosswoz_en/dstc9-tes
 unzip -o dstc9-test-250.zip
 rm dstc9-test-250.zip
 
-wget "https://raw.githubusercontent.com/ConvLab/ConvLab-2/master/data/crosswoz_en/ontology-data.json"
+wget "https://raw.githubusercontent.com/ConvLab/ConvLab-2/master/data/crosswoz_en/ontology-data.json" -o ontology-data.json
+
+cd ../../../
 
 python preprocess_crosswoz_data.py zh
 python preprocess_crosswoz_data.py en
 python preprocess_multiwoz_data.py zh
 python preprocess_multiwoz_data.py en
+
+python preprocess_crosswoz_single_turn_data.py zh
+python preprocess_crosswoz_single_turn_data.py en
+python preprocess_multiwoz_single_turn_data.py zh
+python preprocess_multiwoz_single_turn_data.py en
