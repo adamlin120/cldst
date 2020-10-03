@@ -13,7 +13,7 @@ do
     echo "${DATASET}"
     echo "${LANG}"
     echo "${SPLIT}"
-    python generate_conditional_lm_output.py "${CKPT}" "${DATASET}" "${LANG}" "${SPLIT}"
+    python generate_conditional_lm_output.py "${CKPT}" "${DATASET}" "${LANG}" "${SPLIT}" --batch_size 1
     python parse_conditional_lm_output.py "submission/${DATASET}/${LANG}/${SPLIT}/${FILENAME}.json" "submission/${DATASET}/${LANG}/${SPLIT}/submission.${FILENAME}.json" "${DATASET}" "${LANG}"
   done
 done
