@@ -67,7 +67,7 @@ def parse_args() -> Namespace:
     parser.add_argument("output_tag")
     parser.add_argument("test_set", type=Path)
     parser.add_argument("--cuda_device", type=int, default=0)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=32)
     return parser.parse_args()
 
 
