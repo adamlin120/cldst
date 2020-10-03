@@ -47,6 +47,7 @@ def main(args: Namespace):
     for batch in tqdm(loader):
         gen = model.generate(
             batch["input_ids"].to(device),
+            attention_mask=batch["attention_mask"].to(device),
             max_length=MAX_LENGTH,
             eos_token_id=eos_token_id,
             pad_token_id=pad_token_id,

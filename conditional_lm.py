@@ -1,7 +1,7 @@
 import logging
 import os
 import json
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 
@@ -157,6 +157,10 @@ class MultiwozDataset(Dataset):
             tensor_name: pad_truncate_sequence(
                 [i[tensor_name] for i in batch], self.pad_token_id, self.max_len
             )
+            if tensor_name != "attention_mask"
+            else pad_truncate_attention_mask(
+                [i[tensor_name] for i in batch], self.max_len
+            )
             for tensor_name in batch[0].keys()
         }
 
@@ -261,8 +265,13 @@ def build_input_from_segments(
         input_ids += [*belief, eos]
         labels += [*belief, eos]
 
-    assert len(input_ids) == len(labels)
-    instance = {"input_ids": input_ids, "labels": labels}
+    attention_mask = [1] * len(input_ids)
+    assert len(input_ids) == len(labels) == len(attention_mask)
+    instance = {
+        "input_ids": input_ids,
+        "labels": labels,
+        "attention_mask": attention_mask,
+    }
     return instance
 
 
@@ -276,6 +285,17 @@ def pad_truncate_sequence(
     ]
     padded_tensor = torch.tensor(padded_seq, dtype=torch.long)
     return padded_tensor
+
+
+def pad_truncate_attention_mask(
+    seq: List[List[int]], max_length: int = 512
+) -> torch.LongTensor:
+    max_length = min(max_length, max(len(s) for s in seq))
+    attention_mask = [
+        [0] * (max_length - len(s)) + [1] * min(len(s), max_length) for s in seq
+    ]
+    attention_mask = torch.tensor(attention_mask, dtype=torch.long)
+    return attention_mask
 
 
 def main():
