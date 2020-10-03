@@ -4,7 +4,6 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from collections import defaultdict
 
-import ipdb
 import torch
 from transformers import GPT2LMHeadModel, AutoTokenizer, BertTokenizer
 from tqdm.auto import tqdm
@@ -12,7 +11,8 @@ from tqdm.auto import tqdm
 from conditional_lm import EOS, PAD, build_input_from_segments
 
 MAX_LENGTH = 512
-MAX_FOR_PROMPT = MAX_LENGTH - 128
+MIN_BELIEF_LEN = 128
+MAX_FOR_PROMPT = MAX_LENGTH - MIN_BELIEF_LEN
 
 
 logging.basicConfig(level=logging.INFO)
@@ -39,7 +39,9 @@ def main(args: Namespace):
     preds = []
     for i, (id, turn) in tqdm(enumerate(test_set.items()), total=len(test_set)):
         batch = build_input_from_segments(turn["history"], None, tokenizer)
-        input_ids = torch.tensor([batch["input_ids"]], dtype=torch.long, device=device)
+        input_ids = torch.tensor([batch["input_ids"]], dtype=torch.long, device=device)[
+            :, MIN_BELIEF_LEN
+        ]
         gen = model.generate(
             input_ids,
             max_length=MAX_LENGTH,
