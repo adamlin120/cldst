@@ -52,7 +52,7 @@ def main(args: Namespace):
             pad_token_id=pad_token_id,
             use_cache=True,
         )
-        gen_str = tokenizer.batch_decode(gen)[0]
+        gen_str = tokenizer.batch_decode(gen)
         preds.extend(gen_str)
         if i > 4 and args.debug:
             break
