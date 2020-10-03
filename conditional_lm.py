@@ -164,7 +164,6 @@ class MultiwozDataset(Dataset):
                 [i["attention_mask"] for i in batch], self.max_len
             ),
         }
-        print(out)
         return out
 
 
