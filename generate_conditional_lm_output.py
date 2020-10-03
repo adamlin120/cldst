@@ -42,7 +42,8 @@ def main(args: Namespace):
             "input_ids"
         ]
         if len(input_ids) > MAX_FOR_PROMPT:
-            input_ids = input_ids[MAX_FOR_PROMPT - len(input_ids) :]
+            input_ids = input_ids[len(input_ids) - MAX_FOR_PROMPT :]
+        assert len(input_ids) <= MAX_FOR_PROMPT
         input_ids = torch.tensor([input_ids], dtype=torch.long, device=device)
         gen = model.generate(
             input_ids,
