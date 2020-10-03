@@ -260,7 +260,7 @@ def build_input_from_segments(
     bos, eos, bob = tokenizer.convert_tokens_to_ids([BOS, EOS, BELIEF])
     input_ids = [bos, *tokenize_to_ids(history), bob]
     labels = [IGNORE_INDEX] * len(input_ids)
-    if belief:
+    if belief.strip():
         belief: List[int] = tokenize_to_ids(belief)
         input_ids += [*belief, eos]
         labels += [*belief, eos]
@@ -291,9 +291,7 @@ def pad_truncate_attention_mask(
     seq: List[List[int]], max_length: int = 512
 ) -> torch.LongTensor:
     max_length = min(max_length, max(len(s) for s in seq))
-    attention_mask = [
-        [0] * (max_length - len(s)) + [1] * min(len(s), max_length) for s in seq
-    ]
+    attention_mask = [[0] * (max_length - len(s)) + s for s in seq]
     attention_mask = torch.tensor(attention_mask, dtype=torch.long)
     return attention_mask
 

@@ -44,7 +44,7 @@ def main(args: Namespace):
         num_workers=cpu_count(),
     )
     preds = []
-    for i, batch in tqdm(enumerate(loader)):
+    for i, batch in tqdm(enumerate(loader), total=len(loader)):
         gen = model.generate(
             batch["input_ids"].to(device),
             attention_mask=batch["attention_mask"].to(device),
