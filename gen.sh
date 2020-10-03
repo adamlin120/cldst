@@ -5,7 +5,7 @@ LANG=${4:-"en"}
 
 for EPOCH in $EPOCHS
 do
-  for SPLIT in val test data
+  for SPLIT in val test test-250
   do
     CKPT="ytlin/${RUNID}_${EPOCH}"
     echo "${CKPT}"

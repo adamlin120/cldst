@@ -74,7 +74,7 @@ def parse_args() -> Namespace:
     parser.add_argument("checkpoint_path")
     parser.add_argument("dataset", type=str, choices=["multiwoz", "crosswoz"])
     parser.add_argument("lang", type=str, choices=["en", "zh"])
-    parser.add_argument("split", type=str, choices=["val", "test", "data"])
+    parser.add_argument("split", type=str, choices=["val", "test", "test-250"])
     parser.add_argument("--cuda_device", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=32)
     return parser.parse_args()
