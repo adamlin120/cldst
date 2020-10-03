@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from transformers import GPT2LMHeadModel, AutoTokenizer
 from tqdm.auto import tqdm
 
-from conditional_lm import EOS, MultiwozDataset
+from conditional_lm import EOS, PAD, MultiwozDataset
 
 MAX_LENGTH = 512
 MAX_FOR_PROMPT = MAX_LENGTH - 128
@@ -28,6 +28,7 @@ def main(args: Namespace):
     model = GPT2LMHeadModel.from_pretrained(args.checkpoint_path).eval().to(device)
     tokenizer = AutoTokenizer.from_pretrained(args.checkpoint_path)
     eos_token_id = tokenizer.convert_tokens_to_ids(EOS)
+    pad_token_id = tokenizer.convert_tokens_to_ids(PAD)
 
     test_set_path = (
         Path("./data") / args.dataset / "processed" / args.lang / f"{args.split}.json"
@@ -48,7 +49,7 @@ def main(args: Namespace):
             batch["input_ids"].to(device),
             max_length=MAX_LENGTH,
             eos_token_id=eos_token_id,
-            pad_token_id=eos_token_id,
+            pad_token_id=pad_token_id,
         )
         gen_str = tokenizer.batch_decode(gen)
         preds.extend(gen_str)

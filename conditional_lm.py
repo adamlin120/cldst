@@ -147,7 +147,7 @@ class MultiwozDataset(Dataset):
         turn = self.data[turn_id]
         instance = build_input_from_segments(
             turn["history"],
-            turn.get("belief", "") if not self.testing else "",
+            turn.get("belief", "") if not self.testing else None,
             self.tokenizer,
         )
         return instance
@@ -259,7 +259,7 @@ def build_input_from_segments(
     bos, eos, bob = tokenizer.convert_tokens_to_ids([BOS, EOS, BELIEF])
     input_ids = [bos, *tokenize_to_ids(history), bob]
     labels = [IGNORE_INDEX] * len(input_ids)
-    if belief.strip():
+    if belief is not None:
         belief: List[int] = tokenize_to_ids(belief)
         input_ids += [*belief, eos]
         labels += [*belief, eos]
