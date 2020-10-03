@@ -38,10 +38,12 @@ def main(args: Namespace):
 
     preds = []
     for i, (id, turn) in tqdm(enumerate(test_set.items()), total=len(test_set)):
-        batch = build_input_from_segments(turn["history"], None, tokenizer)
-        input_ids = torch.tensor([batch["input_ids"]], dtype=torch.long, device=device)[
-            :, MIN_BELIEF_LEN
+        input_ids = build_input_from_segments(turn["history"], None, tokenizer)[
+            "input_ids"
         ]
+        if len(input_ids) > MAX_FOR_PROMPT:
+            input_ids = input_ids[MAX_FOR_PROMPT - len(input_ids) :]
+        input_ids = torch.tensor([input_ids], dtype=torch.long, device=device)
         gen = model.generate(
             input_ids,
             max_length=MAX_LENGTH,
