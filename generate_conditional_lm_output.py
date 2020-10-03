@@ -46,7 +46,6 @@ def main(args: Namespace):
         )
         gen_str = tokenizer.batch_decode(gen)
         preds.extend(gen_str)
-        ipdb.set_trace()
 
     pred_dump = defaultdict(list)
     for pred, id in zip(preds, test_set.keys()):
@@ -64,7 +63,7 @@ def parse_args() -> Namespace:
     parser.add_argument("output_tag")
     parser.add_argument("test_set", type=Path)
     parser.add_argument("--cuda_device", type=int, default=0)
-    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--batch_size", type=int, default=8)
     return parser.parse_args()
 
 
