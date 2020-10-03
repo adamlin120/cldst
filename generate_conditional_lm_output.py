@@ -35,7 +35,7 @@ def main(args: Namespace):
     )
     test_set = json.loads(test_set_path.read_text())
 
-    dataset = MultiwozDataset(test_set_path, tokenizer, MAX_FOR_PROMPT)
+    dataset = MultiwozDataset(test_set_path, tokenizer, MAX_FOR_PROMPT, True)
     loader = DataLoader(
         dataset,
         batch_size=args.batch_size,
