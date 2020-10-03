@@ -102,7 +102,9 @@ def main():
                     )
                     target_data = json.loads(target_file_path.read_text())
 
-                    keys = random.sample(source_data, len(source_data) // 3)
+                    keys = random.sample(
+                        list(source_data.keys()), len(source_data) // 3
+                    )
                     sources = [source_data[k]["history"] for k in keys]
                     targets = [target_data[k]["history"] for k in keys]
 
