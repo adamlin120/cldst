@@ -158,7 +158,7 @@ class MultiwozDataset(Dataset):
                 [i["input_ids"] for i in batch], self.pad_token_id, self.max_len
             ),
             "labels": pad_truncate_sequence(
-                [i["input_ids"] for i in batch], IGNORE_INDEX, self.max_len
+                [i["labels"] for i in batch], IGNORE_INDEX, self.max_len
             ),
             "attention_mask": pad_truncate_attention_mask(
                 [i["attention_mask"] for i in batch], self.max_len
