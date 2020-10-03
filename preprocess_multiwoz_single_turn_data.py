@@ -25,7 +25,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 
-DELETE = {"en": "delete", "zh": "刪除"}
+DELETE = {"en": "delete", "zh": "刪 除"}
 
 
 def main():
