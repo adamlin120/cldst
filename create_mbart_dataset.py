@@ -40,26 +40,31 @@ def main():
                 "decoder_input_ids": [],
                 "labels": [],
             }
-            for lang in ["en", "zh"]:
+            for lang in ["en_single_turn", "zh_single_turn"]:
                 if split != "train":
-                    if (dataset_name == "multiwoz" and lang != "zh") or (
-                        dataset_name == "crosswoz" and lang != "en"
+                    if (dataset_name == "multiwoz" and "zh" not in lang) or (
+                        dataset_name == "crosswoz" and "en" not in lang
                     ):
                         continue
                 file_path = (
                     data_dir / dataset_name / "processed" / lang / f"{split}.json"
                 )
                 data = json.loads(file_path.read_text())
+                if split == "train" and (
+                    (dataset_name == "multiwoz" and "zh" not in lang)
+                    or (dataset_name == "crosswoz" and "en" not in lang)
+                ):
+                    data = dict(random.sample(data.items(), len(data) // 2))
                 sources = [v["history"] for v in data.values()]
                 targets = [v["belief"] for v in data.values()]
-                if lang == "zh":
+                if "zh" in lang:
                     sources = list(map(clean_chinese_spaces, sources))
                     targets = list(map(clean_chinese_spaces, targets))
                 batch = tokenizer.prepare_seq2seq_batch(
                     src_texts=sources,
-                    src_lang=LANG2LANG_CODE[lang],
+                    src_lang=LANG2LANG_CODE[lang.split("_")[0]],
                     tgt_texts=targets,
-                    tgt_lang=LANG2LANG_CODE[lang],
+                    tgt_lang=LANG2LANG_CODE[lang.split("_")[0]],
                     max_length=max_length,
                     max_target_length=max_target_length,
                 )
@@ -103,7 +108,7 @@ def main():
                     target_data = json.loads(target_file_path.read_text())
 
                     keys = random.sample(
-                        list(source_data.keys()), len(source_data) // 3
+                        list(source_data.keys()), len(source_data) // 4
                     )
                     sources = [source_data[k]["history"] for k in keys]
                     targets = [target_data[k]["history"] for k in keys]
