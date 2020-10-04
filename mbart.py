@@ -187,8 +187,8 @@ def main():
         filepath=os.path.join(
             "ckpts", wandb_logger.experiment.id, "{epoch}-{val_loss:.4f}"
         ),
-        save_last=True,
-        save_top_k=2,
+        save_last=False,
+        save_top_k=1,
         verbose=True,
         monitor="val_loss",
         mode="min",
