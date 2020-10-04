@@ -3,12 +3,15 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 from conditional_lm import ConditionalLM
+from mbart import MBartDST
 
 logging.basicConfig(level=logging.INFO)
 
 
-def main(args: Namespace):
-    model = ConditionalLM.load_from_checkpoint(
+def main():
+    args = parse_args()
+    module_class = MBartDST if args.mbart else ConditionalLM
+    model = module_class.load_from_checkpoint(
         checkpoint_path=args.checkpoint_path,
         hparams_file=args.hparams_file,
     )
@@ -22,8 +25,9 @@ def parse_args() -> Namespace:
     parser.add_argument("checkpoint_path")
     parser.add_argument("hparams_file")
     parser.add_argument("save_dir", type=Path)
+    parser.add_argument("--mbart", action="store_true")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    main(parse_args())
+    main()
