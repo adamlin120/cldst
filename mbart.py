@@ -91,7 +91,7 @@ class MBartDST(LightningModule):
             default="facebook/mbart-large-cc25",
             help="Dir path to pretrained model",
         )
-        parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
+        parser.add_argument("--lr", type=float, default=5e-4, help="Learning rate")
         return parser
 
 
