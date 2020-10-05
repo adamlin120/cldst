@@ -254,7 +254,7 @@ class CldstMBartDataModule(LightningDataModule):
         parent_parser.add_argument(
             "--lang", type=str, choices=["en", "zh", "both"], required=True
         )
-        parent_parser.add_argument("--batch_size", type=int, default=16)
+        parent_parser.add_argument("--batch_size", type=int, default=2)
         parent_parser.add_argument(
             "--num_workers",
             type=int,
