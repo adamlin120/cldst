@@ -74,8 +74,8 @@ def build_lm_sequence(
             if isinstance(tokenizer, BertTokenizer)
             else tokenizer.eos_token_id
         )
-        input_ids.append(tokenizer.eos_token_id)
-        labels.append(tokenizer.eos_token_id)
+        input_ids.append(eos_token_id)
+        labels.append(eos_token_id)
 
     assert len(input_ids) == len(labels)
     instance = {
