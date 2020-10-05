@@ -12,7 +12,8 @@ def main():
     args = parse_args()
     module_class = MBartDST if args.mbart else ConditionalLM
     model = module_class.load_from_checkpoint(checkpoint_path=str(args.checkpoint_path))
-    save_dir = args.checkpoint_path / args.checkpoint_path.stem
+    dir = args.checkpoint_path.parent
+    save_dir = dir / dir.stem
     save_dir.mkdir(exist_ok=True, parents=True)
     model.model.save_pretrained(save_dir)
     model.tokenizer.save_pretrained(save_dir)
