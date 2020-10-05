@@ -329,10 +329,7 @@ def parse_args():
     parser = MultiWOZDataModule.add_argparse_args(parser)
     parser = Trainer.add_argparse_args(parser)
 
-    parser.set_defaults(
-        accumulate_grad_batches=2,
-        gradient_clip_val=1.0,
-    )
+    parser.set_defaults(accumulate_grad_batches=2, gradient_clip_val=1.0, precision=16)
 
     args = parser.parse_args()
     return args
