@@ -24,10 +24,10 @@ def build_history_from_utterances(
 ) -> str:
     system, user = {"en": ("system", "user"), "zh": ("用戶", "系統")}[lang]
     history = ""
-    for sys, user in zip(system_utterances, user_utterances):
+    for sys, usr in zip(system_utterances, user_utterances):
         if sys is not None:
             history += f"{system} : {sys} "
-        history += f"{user} : {user} "
+        history += f"{user} : {usr} "
     return history.strip()
 
 
