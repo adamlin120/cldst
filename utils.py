@@ -69,6 +69,11 @@ def build_lm_sequence(
         labels += belief_tokens
 
     if add_eos:
+        eos_token_id = (
+            tokenizer.pad_token_id
+            if isinstance(tokenizer, BertTokenizer)
+            else tokenizer.eos_token_id
+        )
         input_ids.append(tokenizer.eos_token_id)
         labels.append(tokenizer.eos_token_id)
 
