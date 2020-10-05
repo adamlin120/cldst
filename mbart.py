@@ -139,7 +139,9 @@ class CldstMBartDataset(Dataset):
         system_utterances, user_utterances = get_history_utterances(
             turns, self.num_history_turns
         )
-        history = build_history_from_utterances(system_utterances, user_utterances)
+        history = build_history_from_utterances(
+            system_utterances, user_utterances, turn_lang
+        )
 
         source = history + self.tokenizer.eos_token + source_lang_code
         target = target_lang_code + belief_str + self.tokenizer.eos_token
