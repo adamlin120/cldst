@@ -39,9 +39,9 @@ def build_history_from_utterances(
     history = ""
     for sys, user in zip(system_utterances, user_utterances):
         if sys is not None:
-            history += f"{SYSTEM} : {sys}"
-        history += f"{USER} : {user}"
-    return history
+            history += f"{SYSTEM} : {sys} "
+        history += f"{USER} : {user} "
+    return history.strip()
 
 
 def stringarize_belief(
