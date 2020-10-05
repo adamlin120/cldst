@@ -86,7 +86,7 @@ class ConditionalLM(LightningModule):
         parser.add_argument(
             "--model_checkpoint",
             type=str,
-            default="models/CDial-GPT2_LCCC-base/",
+            default="ytlin/CDial-GPT2_LCCC-base",
             help="Dir path to pretrained model",
             choices=["models/CDial-GPT2_LCCC-base/", "gpt2", "gpt2-medium"],
         )
