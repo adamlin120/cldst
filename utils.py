@@ -5,7 +5,7 @@ import torch
 from transformers import BertTokenizer, GPT2Tokenizer
 
 SLOT_SEP = "<SLOT>"
-SLOT_NAME_SEP = "<SLOT_NAME"
+SLOT_NAME_SEP = "<SLOT_NAME>"
 SLOT_VALUE_SEP = "<SLOT_VALUE>"
 
 IGNORE_INDEX = -100
@@ -45,6 +45,7 @@ def stringarize_belief(
             f"{SLOT_SEP} {domain} {SLOT_NAME_SEP} {slot_name} {SLOT_VALUE_SEP} {slot_value}"
             for domain, domain_slots in belief.items()
             for slot_name, slot_value in domain_slots.items()
+            if slot_value.strip()
         ]
     )
     return belief_str
