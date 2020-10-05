@@ -15,7 +15,7 @@ from pytorch_lightning import (
     EvalResult,
 )
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from transformers import AdamW, BertTokenizer, GPT2LMHeadModel
+from transformers import AdamW, BertTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from utils import (
@@ -142,7 +142,9 @@ class LmDstDataset(Dataset):
         out = {
             "input_ids": pad_back_or_truncate_start_sequence(
                 [i["input_ids"] for i in batch],
-                self.tokenizer.pad_token_id,
+                self.tokenizer.eos_token_id
+                if isinstance(self.tokenizer, GPT2Tokenizer)
+                else self.tokenizer.pad_token_id,
                 self.max_len,
             ),
             "labels": pad_back_or_truncate_start_sequence(
