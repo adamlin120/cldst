@@ -1,8 +1,6 @@
 import logging
 import os
-import json
-from typing import Dict, List
-from pathlib import Path
+from typing import Dict, List, Union, Tuple
 from argparse import ArgumentParser, Namespace
 
 import torch
@@ -17,44 +15,32 @@ from pytorch_lightning import (
     EvalResult,
 )
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from transformers import AdamW, BertTokenizer, GPT2LMHeadModel, GPT2Tokenizer
+from transformers import AdamW, BertTokenizer, GPT2LMHeadModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
-from preprocess_multiwoz_data import SLOT_SEP, SLOT_NAME_SEP, SLOT_VALUE_SEP
-
+from utils import (
+    IGNORE_INDEX,
+    PAD,
+    add_special_tokens_,
+    build_input_from_segments,
+    pad_truncate_sequence,
+    load_tokenizer,
+    load_json,
+)
 
 logging.basicConfig(level=logging.INFO)
-
-
-IGNORE_INDEX = -100
-BOS = "<bos>"
-EOS = "<eos>"
-PAD = "<pad>"
-BELIEF = "<BELIEF>"
-ATTR_TO_SPECIAL_TOKEN = {
-    "bos_token": BOS,
-    "eos_token": EOS,
-    "pad_token": PAD,
-    "additional_special_tokens": [BELIEF, SLOT_SEP, SLOT_NAME_SEP, SLOT_VALUE_SEP],
-}
 
 
 class ConditionalLM(LightningModule):
     def __init__(
         self,
         hparams: Namespace,
-    ):
+    ) -> None:
         super().__init__()
         self.hparams = hparams
 
-        tokenizer_class = (
-            GPT2Tokenizer if self.hparams.gpt2_tokenizer else BertTokenizer
-        )
-        self.tokenizer = tokenizer_class.from_pretrained(
-            self.hparams.model_checkpoint, do_lower_case=True
-        )
+        self.tokenizer = load_tokenizer(self.hparams.model_checkpoint, False)
         self.model = GPT2LMHeadModel.from_pretrained(self.hparams.model_checkpoint)
-        # Add special tokens if they are not already added
         add_special_tokens_(self.model, self.tokenizer)
 
     def forward(self, *args, **kwargs) -> CausalLMOutputWithPast:
@@ -102,53 +88,60 @@ class ConditionalLM(LightningModule):
             type=str,
             default="models/CDial-GPT2_LCCC-base/",
             help="Dir path to pretrained model",
-        )
-        parser.add_argument(
-            "--gpt2_tokenizer",
-            action="store_true",
-            help="use gpt2 tokenizer instead of bert tokenizer",
+            choices=["models/CDial-GPT2_LCCC-base/", "gpt2", "gpt2-medium"],
         )
         parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate")
         return parser
 
 
-def add_special_tokens_(model, tokenizer):
-    """Add special tokens to the tokenizer and the model if they have not
-    already been added."""
-    orig_num_tokens = len(tokenizer)
-    # doesn't add if they are already there
-    num_added_tokens = tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
-    if num_added_tokens > 0:
-        model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
-
-
-class MultiwozDataset(Dataset):
+class LmDstDataset(Dataset):
     def __init__(
         self,
-        path: Path,
-        tokenizer: BertTokenizer,
-        max_len: int = 512,
-        testing: bool = False,
+        data: Dict[str, List[Tuple[str, str, Dict]]],
+        tokenizer: Union[BertTokenizer, GPT2LMHeadModel],
+        lang: str,
+        max_len: int,
+        num_history_turns: int,
     ) -> None:
-        self.path = path
+        self.data = data
         self.tokenizer = tokenizer
+        self.lang = lang
         self.max_len = max_len
-        self.testing = testing
+        self.num_history_turns = num_history_turns
 
-        self.data = json.loads(self.path.read_text())
-        self.turn_ids: List[str] = list(self.data.keys())
+        self.data = {
+            k: v
+            for k, v in self.data.items()
+            if k.startswith(self.lang) or self.lang == "both"
+        }
+        self.turn_ids: List[Tuple[str, int]] = [
+            (dialogue_id, turn_id)
+            for dialogue_id, turns in self.data.items()
+            for turn_id in range(len(turns))
+        ]
+
         self.pad_token_id = self.tokenizer.convert_tokens_to_ids(PAD)
 
     def __len__(self) -> int:
-        return len(self.data)
+        return len(self.turn_ids)
 
-    def __getitem__(self, index: str) -> Dict[str, List[int]]:
-        turn_id = self.turn_ids[index]
-        turn = self.data[turn_id]
+    def __getitem__(self, index: int) -> Dict[str, List[int]]:
+        dialogue_id, turn_id = self.turn_ids[index]
+        turns = self.data[dialogue_id]
+
+        if isinstance(self.num_history_turns, int):
+            system_utterances, user_utterances, _ = zip(*turns)
+            if self.num_history_turns > 0:
+                system_utterances = system_utterances[-self.num_history_turns :]
+                user_utterances = user_utterances[-self.num_history_turns :]
+            _, _, belief = turns[turn_id]
+        else:
+            raise ValueError(
+                f"num_history_turns: {self.num_history_turns} should be -1 or positive integer"
+            )
+
         instance = build_input_from_segments(
-            turn["history"],
-            turn.get("belief", "") if not self.testing else None,
-            self.tokenizer,
+            self.tokenizer, system_utterances, user_utterances, belief
         )
         return instance
 
@@ -160,44 +153,48 @@ class MultiwozDataset(Dataset):
             "labels": pad_truncate_sequence(
                 [i["labels"] for i in batch], IGNORE_INDEX, self.max_len
             ),
+            "attention_mask": pad_truncate_sequence(
+                [[1] * len(i["input_ids"]) for i in batch], 0, self.max_len
+            ),
         }
         return out
 
 
-class MultiWOZDataModule(LightningDataModule):
+class LmDstDataModule(LightningDataModule):
     def __init__(
         self,
         hparams: Namespace,
-    ):
+    ) -> None:
         super().__init__()
         self.hparams = hparams
 
-        tokenizer_class = (
-            GPT2Tokenizer if self.hparams.gpt2_tokenizer else BertTokenizer
+        self.tokenizer = load_tokenizer(
+            self.hparams.model_checkpoint, add_special_token=True
         )
-        self.tokenizer = tokenizer_class.from_pretrained(
-            self.hparams.model_checkpoint, do_lower_case=True
-        )
-        self.tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
-        self.datasets: Dict[str, MultiwozDataset] = {}
+        data = load_json(self.hparams.data)
+        self.datasets: Dict[str, LmDstDataset] = data[self.hparams.dataset]
 
-    def setup(self, stage=None):
+    def setup(self, stage=None) -> None:
         if stage == "fit" or stage is None:
             for split in ["train", "val"]:
-                self.datasets[split] = MultiwozDataset(
-                    Path(self.hparams.data_dir) / f"{split}.json",
+                self.datasets[split] = LmDstDataset(
+                    self.datasets[split],
                     self.tokenizer,
+                    self.hparams.lang,
                     self.hparams.max_len,
+                    self.hparams.num_history_turns,
                 )
 
         if stage == "test" or stage is None:
-            self.datasets["test"] = MultiwozDataset(
-                Path(self.hparams.data_dir) / "test.json",
+            self.datasets["test"] = LmDstDataset(
+                self.datasets[split],
                 self.tokenizer,
+                self.hparams.lang,
                 self.hparams.max_len,
+                self.hparams.num_history_turns,
             )
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> DataLoader:
         return DataLoader(
             self.datasets["train"],
             collate_fn=self.datasets["train"].collate_fn,
@@ -207,7 +204,7 @@ class MultiWOZDataModule(LightningDataModule):
             shuffle=True,
         )
 
-    def val_dataloader(self):
+    def val_dataloader(self) -> DataLoader:
         return DataLoader(
             self.datasets["val"],
             collate_fn=self.datasets["val"].collate_fn,
@@ -216,7 +213,7 @@ class MultiWOZDataModule(LightningDataModule):
             pin_memory=True,
         )
 
-    def test_dataloader(self):
+    def test_dataloader(self) -> DataLoader:
         return DataLoader(
             self.datasets["test"],
             collate_fn=self.datasets["test"].collate_fn,
@@ -228,12 +225,18 @@ class MultiWOZDataModule(LightningDataModule):
     @classmethod
     def add_argparse_args(cls, parent_parser: ArgumentParser) -> ArgumentParser:
         parent_parser.add_argument(
-            "--data_dir",
+            "--data",
             type=str,
-            default="data/multiwoz/processed/zh/",
+            default="data/xldst.json",
             help="Path of the dataset.",
         )
-        parent_parser.add_argument("--batch_size", type=int, default=2)
+        parent_parser.add_argument(
+            "--dataset", type=str, choices=["crosswoz", "multiwoz"], required=True
+        )
+        parent_parser.add_argument(
+            "--lang", type=str, choices=["en", "zh", "both"], required=True
+        )
+        parent_parser.add_argument("--batch_size", type=int, default=16)
         parent_parser.add_argument(
             "--num_workers",
             type=int,
@@ -245,43 +248,13 @@ class MultiWOZDataModule(LightningDataModule):
             type=int,
             default=512,
         )
+        parent_parser.add_argument(
+            "--num_history_turns",
+            type=int,
+            help="-1 for all, or positive interger",
+            required=True,
+        )
         return parent_parser
-
-
-def build_input_from_segments(
-    history: str,
-    belief: str,
-    tokenizer: BertTokenizer,
-) -> Dict[str, List[int]]:
-    def tokenize_to_ids(x: str) -> List[int]:
-        return tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x))
-
-    bos, eos, bob = tokenizer.convert_tokens_to_ids([BOS, EOS, BELIEF])
-    input_ids = [bos, *tokenize_to_ids(history), bob]
-    labels = [IGNORE_INDEX] * len(input_ids)
-    if belief is not None:
-        belief: List[int] = tokenize_to_ids(belief)
-        input_ids += [*belief, eos]
-        labels += [*belief, eos]
-
-    assert len(input_ids) == len(labels)
-    instance = {
-        "input_ids": input_ids,
-        "labels": labels,
-    }
-    return instance
-
-
-def pad_truncate_sequence(
-    seq: List[List[int]], padding_value: int, max_length: int = 512
-) -> torch.LongTensor:
-    max_length = min(max_length, max(len(s) for s in seq))
-    padded_seq = [
-        s[max(0, len(s) - max_length) :] + [padding_value] * (max_length - len(s))
-        for s in seq
-    ]
-    padded_tensor = torch.tensor(padded_seq, dtype=torch.long)
-    return padded_tensor
 
 
 def main():
@@ -295,22 +268,16 @@ def main():
         filepath=os.path.join(
             "ckpts", wandb_logger.experiment.id, "{epoch}-{val_loss:.4f}"
         ),
-        save_last=False,
-        save_top_k=1,
         verbose=True,
-        monitor="val_loss",
-        mode="min",
     )
-    early_stop_callback = EarlyStopping(
-        monitor="val_loss", min_delta=0.00, patience=2, verbose=True, mode="min"
-    )
+    early_stop_callback = EarlyStopping(patience=2, verbose=True)
     trainer = Trainer.from_argparse_args(
         args,
         logger=[tb_logger, wandb_logger],
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stop_callback,
     )
-    dm = MultiWOZDataModule(args)
+    dm = LmDstDataModule(args)
     dm.prepare_data()
 
     dm.setup("fit")
@@ -326,7 +293,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=13)
 
     parser = ConditionalLM.add_model_specific_args(parser)
-    parser = MultiWOZDataModule.add_argparse_args(parser)
+    parser = LmDstDataModule.add_argparse_args(parser)
     parser = Trainer.add_argparse_args(parser)
 
     parser.set_defaults(accumulate_grad_batches=2, gradient_clip_val=1.0, precision=16)
