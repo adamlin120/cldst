@@ -1,8 +1,7 @@
-tmp/
+ckpts/
+data/
 logs/
 wandb/
-models/
-ckpts/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### JetBrains template

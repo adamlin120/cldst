@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, Union, Optional
+from typing import Dict, List, Union, Optional, Tuple
 
 import torch
 from transformers import BertTokenizer, GPT2Tokenizer
@@ -22,16 +22,6 @@ SYSTEM = "system"
 USER = "user"
 
 LANG_CODE = {"en": "en_XX", "zh": "zh_CN"}
-
-
-def add_special_tokens_(model, tokenizer):
-    """Add special tokens to the tokenizer and the model if they have not
-    already been added."""
-    orig_num_tokens = len(tokenizer)
-    # doesn't add if they are already there
-    num_added_tokens = tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
-    if num_added_tokens > 0:
-        model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
 
 
 def build_history_from_utterances(
@@ -60,7 +50,7 @@ def stringarize_belief(
     return belief_str
 
 
-def build_input_from_segments(
+def build_lm_sequence(
     tokenizer: Union[BertTokenizer, GPT2Tokenizer],
     system_utterances: List[str],
     user_utterances: List[str],
@@ -93,7 +83,7 @@ def build_input_from_segments(
     return instance
 
 
-def pad_truncate_sequence(
+def pad_back_or_truncate_start_sequence(
     seq: List[List[int]], padding_value: int, max_length: int
 ) -> torch.LongTensor:
     max_length = min(max_length, max(len(s) for s in seq))
@@ -103,6 +93,22 @@ def pad_truncate_sequence(
     ]
     padded_tensor = torch.tensor(padded_seq, dtype=torch.long)
     return padded_tensor
+
+
+def get_history_utterances(
+    turns: List[Tuple[str, str, Dict[str, Dict[str, str]]]],
+    num_history_turns: int,
+) -> Tuple[List[str], List[str]]:
+    if isinstance(num_history_turns, int):
+        system_utterances, user_utterances, _ = zip(*turns)
+        if num_history_turns > 0:
+            system_utterances = system_utterances[-num_history_turns:]
+            user_utterances = user_utterances[-num_history_turns:]
+    else:
+        raise ValueError(
+            f"num_history_turns: {num_history_turns} should be -1 or positive integer"
+        )
+    return system_utterances, user_utterances
 
 
 def load_tokenizer(
@@ -118,6 +124,16 @@ def load_tokenizer(
     return tokenizer
 
 
-def load_json(path: str):
+def add_special_tokens_to_model_tokenizer(model, tokenizer) -> None:
+    """Add special tokens to the tokenizer and the model if they have not
+    already been added."""
+    orig_num_tokens = len(tokenizer)
+    # doesn't add if they are already there
+    num_added_tokens = tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN)
+    if num_added_tokens > 0:
+        model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
+
+
+def load_json(path: str) -> Dict:
     with open(path, "r") as f:
         return json.load(f)

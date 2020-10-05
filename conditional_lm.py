@@ -20,12 +20,12 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from utils import (
     IGNORE_INDEX,
-    PAD,
-    add_special_tokens_,
-    build_input_from_segments,
-    pad_truncate_sequence,
+    add_special_tokens_to_model_tokenizer,
+    build_lm_sequence,
+    pad_back_or_truncate_start_sequence,
     load_tokenizer,
     load_json,
+    get_history_utterances,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -41,7 +41,7 @@ class ConditionalLM(LightningModule):
 
         self.tokenizer = load_tokenizer(self.hparams.model_checkpoint, False)
         self.model = GPT2LMHeadModel.from_pretrained(self.hparams.model_checkpoint)
-        add_special_tokens_(self.model, self.tokenizer)
+        add_special_tokens_to_model_tokenizer(self.model, self.tokenizer)
 
     def forward(self, *args, **kwargs) -> CausalLMOutputWithPast:
         return self.model.forward(return_dict=True, *args, **kwargs)
@@ -119,8 +119,6 @@ class LmDstDataset(Dataset):
             for turn_id in range(len(turns))
         ]
 
-        self.pad_token_id = self.tokenizer.convert_tokens_to_ids(PAD)
-
     def __len__(self) -> int:
         return len(self.turn_ids)
 
@@ -128,31 +126,27 @@ class LmDstDataset(Dataset):
         dialogue_id, turn_id = self.turn_ids[index]
         turns = self.data[dialogue_id]
 
-        if isinstance(self.num_history_turns, int):
-            system_utterances, user_utterances, _ = zip(*turns)
-            if self.num_history_turns > 0:
-                system_utterances = system_utterances[-self.num_history_turns :]
-                user_utterances = user_utterances[-self.num_history_turns :]
-            _, _, belief = turns[turn_id]
-        else:
-            raise ValueError(
-                f"num_history_turns: {self.num_history_turns} should be -1 or positive integer"
-            )
+        _, _, belief = turns[turn_id]
+        system_utterances, user_utterances = get_history_utterances(
+            turns, self.num_history_turns
+        )
 
-        instance = build_input_from_segments(
+        instance = build_lm_sequence(
             self.tokenizer, system_utterances, user_utterances, belief
         )
         return instance
 
     def collate_fn(self, batch: List[Dict[str, List[int]]]) -> Dict[str, torch.Tensor]:
         out = {
-            "input_ids": pad_truncate_sequence(
-                [i["input_ids"] for i in batch], self.pad_token_id, self.max_len
+            "input_ids": pad_back_or_truncate_start_sequence(
+                [i["input_ids"] for i in batch],
+                self.tokenizer.pad_token_id,
+                self.max_len,
             ),
-            "labels": pad_truncate_sequence(
+            "labels": pad_back_or_truncate_start_sequence(
                 [i["labels"] for i in batch], IGNORE_INDEX, self.max_len
             ),
-            "attention_mask": pad_truncate_sequence(
+            "attention_mask": pad_back_or_truncate_start_sequence(
                 [[1] * len(i["input_ids"]) for i in batch], 0, self.max_len
             ),
         }
@@ -186,7 +180,7 @@ class LmDstDataModule(LightningDataModule):
 
         if stage == "test" or stage is None:
             self.datasets["test"] = LmDstDataset(
-                self.datasets[split],
+                self.datasets["test"],
                 self.tokenizer,
                 self.hparams.lang,
                 self.hparams.max_len,

@@ -1,7 +1,6 @@
 import logging
 import os
-from typing import Dict, List
-from pathlib import Path
+from typing import Dict, List, Tuple
 from argparse import ArgumentParser, Namespace
 
 import torch
@@ -18,6 +17,16 @@ from pytorch_lightning import (
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import MBartTokenizer, MBartForConditionalGeneration, AdamW
 from transformers.modeling_outputs import Seq2SeqLMOutput
+
+from utils import (
+    load_json,
+    get_history_utterances,
+    build_history_from_utterances,
+    stringarize_belief,
+    pad_back_or_truncate_start_sequence,
+    LANG_CODE,
+    IGNORE_INDEX,
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -89,19 +98,84 @@ class MBartDST(LightningModule):
 class CldstMBartDataset(Dataset):
     def __init__(
         self,
-        path: Path,
+        data: Dict[str, List[Tuple[str, str, Dict]]],
+        tokenizer: MBartTokenizer,
+        lang: str,
+        max_source_len: int,
+        max_target_len: int,
+        num_history_turns: int,
     ) -> None:
-        self.path = path
-        self.data: Dict[str, torch.Tensor] = torch.load(self.path.open("rb"))
+        self.data = data
+        self.tokenizer = tokenizer
+        self.lang = lang
+        self.max_source_len = max_source_len
+        self.max_target_len = max_target_len
+        self.num_history_turns = num_history_turns
+
+        self.data = {
+            k: v
+            for k, v in self.data.items()
+            if k.startswith(self.lang) or self.lang == "both"
+        }
+        self.turn_ids: List[Tuple[str, int]] = [
+            (dialogue_id, turn_id)
+            for dialogue_id, turns in self.data.items()
+            for turn_id in range(len(turns))
+        ]
 
     def __len__(self) -> int:
-        return len(self.data["input_ids"])
+        return len(self.turn_ids)
 
-    def __getitem__(self, index: int) -> int:
-        return index
+    def __getitem__(self, index: int) -> Dict[str, List[int]]:
+        dialogue_id, turn_id = self.turn_ids[index]
+        turns = self.data[dialogue_id]
 
-    def collate_fn(self, batch_of_index: List[int]) -> Dict[str, torch.Tensor]:
-        return {k: v[batch_of_index] for k, v in self.data.items()}
+        turn_lang = dialogue_id.split("_")[0]
+        source_lang_code = LANG_CODE[turn_lang]
+        target_lang_code = source_lang_code
+
+        _, _, belief = turns[turn_id]
+        belief_str = stringarize_belief(belief, add_begin_of_belief=False)
+        system_utterances, user_utterances = get_history_utterances(
+            turns, self.num_history_turns
+        )
+        history = build_history_from_utterances(system_utterances, user_utterances)
+
+        source = history + self.tokenizer.eos_token + source_lang_code
+        target = target_lang_code + belief_str + self.tokenizer.eos_token
+
+        source_ids = self.tokenizer.encode(source, add_special_tokens=False)
+        target_ids = self.tokenizer.encode(target, add_special_tokens=False)
+
+        return {"source_ids": source_ids, "target_ids": target_ids}
+
+    def collate_fn(self, batch: List[Dict[str, List[int]]]) -> Dict[str, torch.Tensor]:
+        input_ids = pad_back_or_truncate_start_sequence(
+            [i["source_ids"] for i in batch],
+            self.tokenizer.pad_token_id,
+            self.max_source_len,
+        )
+        attention_mask = pad_back_or_truncate_start_sequence(
+            [[1] * len(i["source_ids"]) for i in batch], 0, self.max_source_len
+        )
+
+        target_ids = pad_back_or_truncate_start_sequence(
+            [i["target_ids"] for i in batch],
+            self.tokenizer.pad_token_id,
+            512,  # to avoid truncate start
+        )
+        target_ids = target_ids[:, : self.max_target_len]  # truncate back
+        decoder_input_ids = target_ids[:, :-1].contiguous()
+        labels = target_ids[:, 1:].clone()
+        labels[labels == self.tokenizer.pad_token_id] = IGNORE_INDEX
+
+        out = {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "decoder_input_ids": decoder_input_ids,
+            "labels": labels,
+        }
+        return out
 
 
 class CldstMBartDataModule(LightningDataModule):
@@ -113,18 +187,29 @@ class CldstMBartDataModule(LightningDataModule):
         self.hparams = hparams
 
         self.tokenizer = MBartTokenizer.from_pretrained(self.hparams.model_checkpoint)
-        self.datasets: Dict[str, CldstMBartDataset] = {}
+        data = load_json(self.hparams.data)
+        self.datasets: Dict[str, CldstMBartDataset] = data[self.hparams.dataset]
 
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
             for split in ["train", "val"]:
                 self.datasets[split] = CldstMBartDataset(
-                    Path(self.hparams.data_dir) / f"{split}.pt"
+                    self.datasets[split],
+                    self.tokenizer,
+                    self.hparams.lang,
+                    self.hparams.max_source_len,
+                    self.hparams.max_target_len,
+                    self.hparams.num_history_turns,
                 )
 
         if stage == "test" or stage is None:
             self.datasets["test"] = CldstMBartDataset(
-                Path(self.hparams.data_dir) / "test.pt"
+                self.datasets["test"],
+                self.tokenizer,
+                self.hparams.lang,
+                self.hparams.max_source_len,
+                self.hparams.max_target_len,
+                self.hparams.num_history_turns,
             )
 
     def train_dataloader(self):
