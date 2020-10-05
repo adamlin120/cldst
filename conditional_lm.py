@@ -89,7 +89,7 @@ class ConditionalLM(LightningModule):
             default="ytlin/CDial-GPT2_LCCC-base",
             help="Dir path to pretrained model: ytlin/CDial-GPT2_LCCC-base gpt2, gpt2-medium",
         )
-        parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate")
+        parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
         return parser
 
 

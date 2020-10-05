@@ -23,9 +23,6 @@ from transformers.modeling_outputs import Seq2SeqLMOutput
 logging.basicConfig(level=logging.INFO)
 
 
-LANG_CODE = {"en": "en_XX", "zh": "zh_CN"}
-
-
 class MBartDST(LightningModule):
     def __init__(
         self,
@@ -85,7 +82,7 @@ class MBartDST(LightningModule):
             default="facebook/mbart-large-cc25",
             help="Dir path to pretrained model",
         )
-        parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate")
+        parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
         return parser
 
 
@@ -161,17 +158,39 @@ class CldstMBartDataModule(LightningDataModule):
     @classmethod
     def add_argparse_args(cls, parent_parser: ArgumentParser) -> ArgumentParser:
         parent_parser.add_argument(
-            "--data_dir",
+            "--data",
             type=str,
-            default="data/multiwoz/processed/mbart_2mono/",
+            default="data/xldst.json",
             help="Path of the dataset.",
         )
-        parent_parser.add_argument("--batch_size", type=int, default=2)
+        parent_parser.add_argument(
+            "--dataset", type=str, choices=["crosswoz", "multiwoz"], required=True
+        )
+        parent_parser.add_argument(
+            "--lang", type=str, choices=["en", "zh", "both"], required=True
+        )
+        parent_parser.add_argument("--batch_size", type=int, default=16)
         parent_parser.add_argument(
             "--num_workers",
             type=int,
             default=1,
             help="Number of workers in data loader",
+        )
+        parent_parser.add_argument(
+            "--max_source_len",
+            type=int,
+            default=512,
+        )
+        parent_parser.add_argument(
+            "--max_target_len",
+            type=int,
+            default=256,
+        )
+        parent_parser.add_argument(
+            "--num_history_turns",
+            type=int,
+            help="-1 for all, or positive interger",
+            required=True,
         )
         return parent_parser
 
@@ -187,15 +206,9 @@ def main():
         filepath=os.path.join(
             "ckpts", wandb_logger.experiment.id, "{epoch}-{val_loss:.4f}"
         ),
-        save_last=False,
-        save_top_k=1,
         verbose=True,
-        monitor="val_loss",
-        mode="min",
     )
-    early_stop_callback = EarlyStopping(
-        monitor="val_loss", min_delta=0.00, patience=2, verbose=True, mode="min"
-    )
+    early_stop_callback = EarlyStopping(patience=2, verbose=True)
     trainer = Trainer.from_argparse_args(
         args,
         logger=[tb_logger, wandb_logger],

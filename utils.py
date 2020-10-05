@@ -21,6 +21,8 @@ ATTR_TO_SPECIAL_TOKEN = {
 SYSTEM = "system"
 USER = "user"
 
+LANG_CODE = {"en": "en_XX", "zh": "zh_CN"}
+
 
 def add_special_tokens_(model, tokenizer):
     """Add special tokens to the tokenizer and the model if they have not
