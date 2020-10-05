@@ -15,7 +15,7 @@ from pytorch_lightning import (
     TrainResult,
     EvalResult,
 )
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import MBartTokenizer, MBartForConditionalGeneration, AdamW
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
@@ -193,8 +193,14 @@ def main():
         monitor="val_loss",
         mode="min",
     )
+    early_stop_callback = EarlyStopping(
+        monitor="val_loss", min_delta=0.00, patience=2, verbose=True, mode="min"
+    )
     trainer = Trainer.from_argparse_args(
-        args, logger=[tb_logger, wandb_logger], checkpoint_callback=checkpoint_callback
+        args,
+        logger=[tb_logger, wandb_logger],
+        checkpoint_callback=checkpoint_callback,
+        early_stop_callback=early_stop_callback,
     )
     dm = CldstMBartDataModule(args)
     dm.prepare_data()

@@ -16,7 +16,7 @@ from pytorch_lightning import (
     TrainResult,
     EvalResult,
 )
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AdamW, BertTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -295,14 +295,20 @@ def main():
         filepath=os.path.join(
             "ckpts", wandb_logger.experiment.id, "{epoch}-{val_loss:.4f}"
         ),
-        save_last=True,
-        save_top_k=2,
+        save_last=False,
+        save_top_k=1,
         verbose=True,
         monitor="val_loss",
         mode="min",
     )
+    early_stop_callback = EarlyStopping(
+        monitor="val_loss", min_delta=0.00, patience=2, verbose=True, mode="min"
+    )
     trainer = Trainer.from_argparse_args(
-        args, logger=[tb_logger, wandb_logger], checkpoint_callback=checkpoint_callback
+        args,
+        logger=[tb_logger, wandb_logger],
+        checkpoint_callback=checkpoint_callback,
+        early_stop_callback=early_stop_callback,
     )
     dm = MultiWOZDataModule(args)
     dm.prepare_data()
