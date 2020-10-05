@@ -4,7 +4,9 @@ from typing import Dict, List, Union, Optional
 import torch
 from transformers import BertTokenizer, GPT2Tokenizer
 
-from preprocess_multiwoz_data import SLOT_SEP, SLOT_NAME_SEP, SLOT_VALUE_SEP
+SLOT_SEP = "<SLOT>"
+SLOT_NAME_SEP = "<SLOT_NAME"
+SLOT_VALUE_SEP = "<SLOT_VALUE>"
 
 IGNORE_INDEX = -100
 EOS = "<eos>"
