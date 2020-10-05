@@ -126,13 +126,15 @@ class LmDstDataset(Dataset):
         dialogue_id, turn_id = self.turn_ids[index]
         turns = self.data[dialogue_id]
 
+        turn_lang = dialogue_id.split("_")[0]
+
         _, _, belief = turns[turn_id]
         system_utterances, user_utterances = get_history_utterances(
             turns, self.num_history_turns
         )
 
         instance = build_lm_sequence(
-            self.tokenizer, system_utterances, user_utterances, belief
+            self.tokenizer, system_utterances, user_utterances, turn_lang, belief
         )
         return instance
 

@@ -4,35 +4,30 @@ from typing import Dict, List, Union, Optional, Tuple
 import torch
 from transformers import BertTokenizer, GPT2Tokenizer
 
+
+IGNORE_INDEX = -100
+
+BELIEF = "<BELIEF>"
 SLOT_SEP = "<SLOT>"
 SLOT_NAME_SEP = "<SLOT_NAME>"
 SLOT_VALUE_SEP = "<SLOT_VALUE>"
-
-IGNORE_INDEX = -100
-EOS = "<eos>"
-PAD = "<pad>"
-BELIEF = "<BELIEF>"
 ATTR_TO_SPECIAL_TOKEN = {
-    "eos_token": EOS,
-    "pad_token": PAD,
     "additional_special_tokens": [BELIEF, SLOT_SEP, SLOT_NAME_SEP, SLOT_VALUE_SEP],
 }
 
-SYSTEM = "system"
-USER = "user"
 
 LANG_CODE = {"en": "en_XX", "zh": "zh_CN"}
 
 
 def build_history_from_utterances(
-    system_utterances: List[str],
-    user_utterances: List[str],
+    system_utterances: List[str], user_utterances: List[str], lang: str
 ) -> str:
+    system, user = {"en": ("system", "user"), "zh": ("用戶", "系統")}[lang]
     history = ""
     for sys, user in zip(system_utterances, user_utterances):
         if sys is not None:
-            history += f"{SYSTEM} : {sys} "
-        history += f"{USER} : {user} "
+            history += f"{system} : {sys} "
+        history += f"{user} : {user} "
     return history.strip()
 
 
@@ -55,13 +50,14 @@ def build_lm_sequence(
     tokenizer: Union[BertTokenizer, GPT2Tokenizer],
     system_utterances: List[str],
     user_utterances: List[str],
+    lang: str,
     belief: Optional[Dict[str, Dict[str, str]]] = None,
     add_eos: Optional[bool] = True,
 ) -> Dict[str, List[int]]:
     def tokenize_to_ids(x: str) -> List[int]:
         return tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x))
 
-    history = build_history_from_utterances(system_utterances, user_utterances)
+    history = build_history_from_utterances(system_utterances, user_utterances, lang)
 
     input_ids = tokenize_to_ids(history + f" {BELIEF}")
     labels = [IGNORE_INDEX] * len(input_ids)
