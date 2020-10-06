@@ -189,14 +189,17 @@ class CldstMBartDataModule(LightningDataModule):
         self.hparams = hparams
 
         self.tokenizer = MBartTokenizer.from_pretrained(self.hparams.model_checkpoint)
-        data: Dict[str, Dict[str, List[Dict[str, Dict[str, str]]]]] = load_json(
-            self.hparams.data
-        )
+        data: Dict[
+            str, Dict[str, Dict[str, List[Dict[str, Dict[str, str]]]]]
+        ] = load_json(self.hparams.data)
         if self.hparams.dataset == "both":
             self.datasets: Dict[str, CldstMBartDataset] = {
-                dialogue_id: turns
-                for dset_name, dset in data.items()
-                for dialogue_id, turns in dset.items()
+                split: {
+                    dialogue_id: turns
+                    for dset_name, dset in data.items()
+                    for dialogue_id, turns in dset[split].items()
+                }
+                for split in ["train", "test", "val"]
             }
         else:
             self.datasets: Dict[str, CldstMBartDataset] = data[self.hparams.dataset]
