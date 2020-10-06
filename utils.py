@@ -1,3 +1,4 @@
+import re
 import json
 from typing import Dict, List, Union, Optional, Tuple
 
@@ -22,7 +23,7 @@ LANG_CODE = {"en": "en_XX", "zh": "zh_CN"}
 def build_history_from_utterances(
     system_utterances: List[str], user_utterances: List[str], lang: str
 ) -> str:
-    system, user = {"en": ("system", "user"), "zh": ("用戶", "系統")}[lang]
+    system, user = {"en": ("system", "user"), "zh": ("系統", "用戶")}[lang]
     history = ""
     for sys, usr in zip(system_utterances, user_utterances):
         if sys is not None:
@@ -37,13 +38,17 @@ def stringarize_belief(
     belief_str = BELIEF if add_begin_of_belief else ""
     belief_str += "".join(
         [
-            f"{SLOT_SEP} {domain} {SLOT_NAME_SEP} {slot_name} {SLOT_VALUE_SEP} {slot_value}"
+            f"{SLOT_SEP} {domain} {SLOT_NAME_SEP} {slot_name} {SLOT_VALUE_SEP} {clean_utterance(slot_value)}"
             for domain, domain_slots in belief.items()
             for slot_name, slot_value in domain_slots.items()
             if slot_value.strip()
         ]
     )
     return belief_str
+
+
+def clean_utterance(utterance: str) -> str:
+    return " ".join(re.split("(\d)", " ".join(utterance.split())))
 
 
 def build_lm_sequence(
@@ -79,9 +84,11 @@ def build_lm_sequence(
 
     assert len(input_ids) == len(labels)
     instance = {
-        "input_ids": input_ids,
-        "labels": labels,
+        "input_ids": input_ids[:2],
+        "labels": labels[:2],
     }
+    if any(i == tokenizer.unk_token_id for i in input_ids):
+        print(tokenizer.decode(input_ids))
     return instance
 
 
