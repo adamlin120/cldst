@@ -189,8 +189,17 @@ class CldstMBartDataModule(LightningDataModule):
         self.hparams = hparams
 
         self.tokenizer = MBartTokenizer.from_pretrained(self.hparams.model_checkpoint)
-        data = load_json(self.hparams.data)
-        self.datasets: Dict[str, CldstMBartDataset] = data[self.hparams.dataset]
+        data: Dict[str, Dict[str, List[Dict[str, Dict[str, str]]]]] = load_json(
+            self.hparams.data
+        )
+        if self.hparams.dataset == "both":
+            self.datasets: Dict[str, CldstMBartDataset] = {
+                dialogue_id: turns
+                for dset_name, dset in data.items()
+                for dialogue_id, turns in dset.items()
+            }
+        else:
+            self.datasets: Dict[str, CldstMBartDataset] = data[self.hparams.dataset]
 
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
@@ -198,7 +207,7 @@ class CldstMBartDataModule(LightningDataModule):
                 self.datasets[split] = CldstMBartDataset(
                     self.datasets[split],
                     self.tokenizer,
-                    self.hparams.lang,
+                    self.hparams.lang if split == "train" else self.hparams.val_lang,
                     self.hparams.max_source_len,
                     self.hparams.max_target_len,
                     self.hparams.num_history_turns,
@@ -208,7 +217,7 @@ class CldstMBartDataModule(LightningDataModule):
             self.datasets["test"] = CldstMBartDataset(
                 self.datasets["test"],
                 self.tokenizer,
-                self.hparams.lang,
+                self.hparams.val_lang,
                 self.hparams.max_source_len,
                 self.hparams.max_target_len,
                 self.hparams.num_history_turns,
@@ -255,6 +264,9 @@ class CldstMBartDataModule(LightningDataModule):
         )
         parent_parser.add_argument(
             "--lang", type=str, choices=["en", "zh", "both"], required=True
+        )
+        parent_parser.add_argument(
+            "--val_lang", type=str, choices=["en", "zh", "both"], default=None
         )
         parent_parser.add_argument("--batch_size", type=int, default=2)
         parent_parser.add_argument(
@@ -324,6 +336,17 @@ def parse_args():
     parser.set_defaults(accumulate_grad_batches=2, gradient_clip_val=1.0, precision=16)
 
     args = parser.parse_args()
+    if args.val_lang is None:
+        if args.lang == "both":
+            if args.dataset == "crosswoz":
+                args.val_lang = "en"
+            elif args.dataset == "multiwoz":
+                args.val_lang = "zh"
+            else:
+                raise ValueError(f"val_lang cannot be set automatically")
+        else:
+            args.val_lang = args.lang
+
     return args
 
 
