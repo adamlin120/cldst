@@ -84,11 +84,9 @@ def build_lm_sequence(
 
     assert len(input_ids) == len(labels)
     instance = {
-        "input_ids": input_ids[:2],
-        "labels": labels[:2],
+        "input_ids": input_ids,
+        "labels": labels,
     }
-    if any(i == tokenizer.unk_token_id for i in input_ids):
-        print(tokenizer.decode(input_ids))
     return instance
 
 
