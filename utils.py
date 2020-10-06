@@ -41,7 +41,9 @@ def stringarize_belief(
             f"{SLOT_SEP} {domain} {SLOT_NAME_SEP} {slot_name} {SLOT_VALUE_SEP} {clean_utterance(slot_value)}"
             for domain, domain_slots in belief.items()
             for slot_name, slot_value in domain_slots.items()
-            if slot_value.strip()
+            if isinstance(slot_value, str)
+            and domain not in {"bus", "taxi", "hospital"}
+            and slot_value.strip()
         ]
     )
     return belief_str
