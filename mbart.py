@@ -263,7 +263,10 @@ class CldstMBartDataModule(LightningDataModule):
             help="Path of the dataset.",
         )
         parent_parser.add_argument(
-            "--dataset", type=str, choices=["crosswoz", "multiwoz"], required=True
+            "--dataset",
+            type=str,
+            choices=["crosswoz", "multiwoz", "both"],
+            required=True,
         )
         parent_parser.add_argument(
             "--lang", type=str, choices=["en", "zh", "both"], required=True
